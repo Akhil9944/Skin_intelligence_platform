@@ -4,14 +4,12 @@ import os
 import json
 from openai import OpenAI
 
-# Initialize OpenAI client configured for Google AI Studio (Gemini) securely if API key is provided
 _google_api_key = os.environ.get("GOOGLE_AI_STUDIO_API_KEY")
 client = OpenAI(
     api_key=_google_api_key,
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
 ) if _google_api_key else None
 
-# Load the trained ML regressor model artifact
 MODEL_PATH = "skin_score_model.pkl"
 try:
     if os.path.exists(MODEL_PATH):
@@ -23,10 +21,6 @@ except Exception:
 
 
 def calculate_skin_health_score(skin_profile, latest_log):
-    """
-    Implements the AI/ML-based Predictive Regression scoring engine using 
-    a trained Random Forest model based on sleep, water, stress, and sun exposure.
-    """
     if not ml_model or not latest_log:
         condition_score = 100
         if skin_profile and skin_profile.is_sensitive:
@@ -64,10 +58,6 @@ def calculate_skin_health_score(skin_profile, latest_log):
 
 
 def generate_personalized_routine(skin_profile):
-    """
-    Generates dynamic AI-driven morning, evening, and weekly skincare routines 
-    using Google's Gemini model via the OpenAI compatibility layer based on the user's skin profile.
-    """
     skin_type = skin_profile.skin_type if skin_profile else "Normal"
     concern = skin_profile.primary_concern if skin_profile else "General Care"
     is_sensitive = skin_profile.is_sensitive if skin_profile else False
@@ -194,4 +184,57 @@ def get_dermatologist_recommendations(skin_profile, latest_log):
             "lifestyle_prescription": ["Increase daily water consumption", "Apply broad-spectrum mineral sunscreen"],
             "warning_notes": "Consult a specialist if inflammation persists."
         }
+
+
+def calculate_routine_adherence(logs):
+    if not logs:
+        return {"adherence_percentage": 0.0, "streak_days": 0, "hydration_avg": 0.0, "sleep_avg": 0.0, "status_message": "No logs recorded yet"}
     
+    recent_logs = logs[:7]
+    total_days = len(recent_logs)
+    adherence_points = 0
+    
+    total_sleep = sum(log.sleep_hours for log in recent_logs)
+    total_water = sum(log.water_glasses for log in recent_logs)
+    
+    for log in recent_logs:
+        day_score = 0
+        if log.sleep_hours >= 7.0:
+            day_score += 1
+        if log.water_glasses >= 8:
+            day_score += 1
+        if log.stress_level <= 5:
+            day_score += 1
+        if day_score >= 2:
+            adherence_points += 1
+            
+    percentage = round((adherence_points / total_days) * 100.0, 1)
+    return {
+        "adherence_percentage": percentage,
+        "streak_days": total_days,
+        "hydration_avg": round(total_water / total_days, 1),
+        "sleep_avg": round(total_sleep / total_days, 1),
+        "status_message": "High consistency" if percentage >= 75 else "Room for consistency improvement"
+    }
+
+
+def calculate_progress_delta(skin_profile, logs):
+    if not logs or len(logs) < 2:
+        current = calculate_skin_health_score(skin_profile, logs[0] if logs else None)
+        return {"current_score": current, "previous_score": current, "score_delta": 0.0, "trend_direction": "Stable"}
+        
+    current_log = logs[0]
+    previous_log = logs[1]
+    
+    current_score = calculate_skin_health_score(skin_profile, current_log)
+    previous_score = calculate_skin_health_score(skin_profile, previous_log)
+    
+    delta = round(current_score - previous_score, 1)
+    direction = "Improving" if delta > 0 else ("Declining" if delta < 0 else "Stable")
+    
+    return {
+        "current_score": current_score,
+        "previous_score": previous_score,
+        "score_delta": delta,
+        "trend_direction": direction
+    }

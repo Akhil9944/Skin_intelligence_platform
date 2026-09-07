@@ -48,13 +48,12 @@ class DailyTrackerCreate(BaseModel):
     water_glasses: int = Field(..., ge=0, description="Glasses of water drank")
     stress_level: int = Field(..., ge=1, le=10, description="Stress level from 1 to 10")
     
-    # Environmental Exposure Fields
     sun_exposure_hours: float = Field(0.0, ge=0, le=24, description="Hours spent in direct sunlight")
-    weather_condition: str = Field("Normal", description="Current weather (e.g., Normal, Humid, Dry, Cold)")
-    pollution_exposure: str = Field("Low", description="Level of dust/pollution exposure (Low, Moderate, High)")
+    weather_condition: str = Field("Normal", description="Current weather")
+    pollution_exposure: str = Field("Low", description="Level of pollution exposure")
 
 class DailyTrackerResponse(BaseModel):
-    id: int  # Updated from str to int for SQL primary keys
+    id: int 
     user_id: int
     date_logged: str 
     sleep_hours: float
@@ -64,6 +63,30 @@ class DailyTrackerResponse(BaseModel):
     sun_exposure_hours: Optional[float] = 0.0
     weather_condition: Optional[str] = "Not recorded"
     pollution_exposure: Optional[str] = "Not recorded"
+
+    class Config:
+        from_attributes = True
+
+# ==========================================
+# ANALYTICS & ADHERENCE SCHEMAS
+# ==========================================
+class AdherenceResponse(BaseModel):
+    user_id: int
+    adherence_percentage: float
+    streak_days: int
+    hydration_score_avg: float
+    sleep_score_avg: float
+    status_message: str
+
+    class Config:
+        from_attributes = True
+
+class ProgressDeltaResponse(BaseModel):
+    user_id: int
+    current_score: float
+    previous_score: float
+    score_delta: float
+    trend_direction: str
 
     class Config:
         from_attributes = True

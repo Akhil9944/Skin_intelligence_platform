@@ -8,14 +8,12 @@ from database import engine, Base, get_db
 import models
 import schemas
 import security
-import assessment  # Imported our new Milestone 2 engine
+import assessment
 
-# Create database tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AI Skin Intelligence API")
 
-# Allow your Next.js frontend to talk to this API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -73,7 +71,7 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
 
 
 # ==========================================
-# SKIN PROFILE ENDPOINTS (SQL)
+# SKIN PROFILE ENDPOINTS
 # ==========================================
 
 @app.post("/profile", response_model=schemas.SkinProfileResponse)
@@ -115,7 +113,7 @@ def get_skin_profile(
 
 
 # ==========================================
-# DAILY TRACKER ENDPOINTS (SQL)
+# DAILY TRACKER ENDPOINTS
 # ==========================================
 
 @app.post("/tracker/daily", response_model=schemas.DailyTrackerResponse)
@@ -157,7 +155,7 @@ def get_daily_habits_history(
 
 
 # ==========================================
-# MILESTONE 2: ASSESSMENT & ROUTINE ENDPOINTS
+# ASSESSMENT & ROUTINE ENDPOINTS
 # ==========================================
 
 @app.get("/assessment/score")
@@ -165,7 +163,6 @@ def get_skin_health_score(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_user)
 ):
-    """Calculates the weighted Skin Health Score based on user profile and latest habits log."""
     profile = db.query(models.SkinProfile).filter(models.SkinProfile.user_id == current_user.id).first()
     latest_log = db.query(models.DailyLog)\
                      .filter(models.DailyLog.user_id == current_user.id)\
@@ -185,14 +182,11 @@ def get_personalized_routine(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_user)
 ):
-    """Generates personalized morning, evening, and weekly routines tailored to the user profile."""
     profile = db.query(models.SkinProfile).filter(models.SkinProfile.user_id == current_user.id).first()
-    
     if not profile:
         raise HTTPException(status_code=404, detail="Please create your Skin Profile first before generating a routine.")
         
-    routine_plan = assessment.generate_personalized_routine(profile)
-    return routine_plan
+    return assessment.generate_personalized_routine(profile)
 
 
 @app.get("/assessment/recommendations")
@@ -200,7 +194,6 @@ def get_dermatologist_recommendations_endpoint(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_user)
 ):
-    """Provides score-backed AI clinical recommendations for the Dermatologist page."""
     profile = db.query(models.SkinProfile).filter(models.SkinProfile.user_id == current_user.id).first()
     latest_log = db.query(models.DailyLog)\
                      .filter(models.DailyLog.user_id == current_user.id)\
@@ -208,3 +201,49 @@ def get_dermatologist_recommendations_endpoint(
                      .first()
                      
     return assessment.get_dermatologist_recommendations(profile, latest_log)
+
+
+# ==========================================
+# ANALYTICS & ADHERENCE ENDPOINTS
+# ==========================================
+
+@app.get("/analytics/adherence", response_model=schemas.AdherenceResponse)
+def get_user_adherence(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user)
+):
+    logs = db.query(models.DailyLog)\
+             .filter(models.DailyLog.user_id == current_user.id)\
+             .order_by(models.DailyLog.date_logged.desc())\
+             .all()
+             
+    metrics = assessment.calculate_routine_adherence(logs)
+    return {
+        "user_id": current_user.id,
+        "adherence_percentage": metrics["adherence_percentage"],
+        "streak_days": metrics["streak_days"],
+        "hydration_score_avg": metrics["hydration_avg"],
+        "sleep_score_avg": metrics["sleep_avg"],
+        "status_message": metrics["status_message"]
+    }
+
+
+@app.get("/analytics/progress", response_model=schemas.ProgressDeltaResponse)
+def get_skin_progress_delta(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user)
+):
+    profile = db.query(models.SkinProfile).filter(models.SkinProfile.user_id == current_user.id).first()
+    logs = db.query(models.DailyLog)\
+             .filter(models.DailyLog.user_id == current_user.id)\
+             .order_by(models.DailyLog.date_logged.desc())\
+             .all()
+             
+    progress = assessment.calculate_progress_delta(profile, logs)
+    return {
+        "user_id": current_user.id,
+        "current_score": progress["current_score"],
+        "previous_score": progress["previous_score"],
+        "score_delta": progress["score_delta"],
+        "trend_direction": progress["trend_direction"]
+    }

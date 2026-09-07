@@ -10,10 +10,8 @@ class User(Base):
     hashed_password = Column(String)
     role = Column(String, default="User")
     
-    # This links the User to their SkinProfile
     skin_profile = relationship("SkinProfile", back_populates="owner", uselist=False)
     
-    # NEW: This links the User to all their daily logs
     daily_logs = relationship("DailyLog", back_populates="owner")
 
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, PlusCircle, ArrowUpRight, ClipboardCheck, UserCheck, History as HistoryIcon, Activity, Moon, Droplets, Sun, Stethoscope } from "lucide-react";
 import Navbar from "@/app/components/Navbar";
+import AnalyticsDashboard from "@/app/components/AnalyticsDashboard";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -94,6 +95,11 @@ export default function DashboardPage() {
               <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">Calibrated</span>
             </div>
           </div>
+        </div>
+
+        {/* Clinical Telemetry & Adherence Analytics */}
+        <div className="mb-10">
+          <AnalyticsDashboard />
         </div>
 
         {/* Interactive Feature Cards */}

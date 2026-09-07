@@ -65,7 +65,7 @@ export default function HistoryPage() {
         <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-              Telemetry Log History
+              Log History
             </h1>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
               Chronological log records tracking sleep, hydration, stress, and environmental exposure.

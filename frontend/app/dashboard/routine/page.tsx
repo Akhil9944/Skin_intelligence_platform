@@ -101,7 +101,7 @@ export default function RoutineAssessmentPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center gap-4 p-24 text-slate-500">
             <RefreshCw className="h-10 w-10 animate-spin text-indigo-600" />
-            <span className="text-sm font-semibold">Synthesizing Clinical AI Regimen...</span>
+            <span className="text-sm font-semibold">Synthesizing Clinical AI Routine...</span>
           </div>
         ) : scoreData && routine ? (
           <div className="space-y-10">
@@ -159,7 +159,7 @@ export default function RoutineAssessmentPage() {
                     <Sun className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Morning Regimen</h3>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Morning Routine</h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400">Pollution shielding, antioxidant protection & UV barrier</p>
                   </div>
                 </div>
@@ -185,7 +185,7 @@ export default function RoutineAssessmentPage() {
                     <Moon className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Evening Regimen</h3>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Evening Routine</h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400">Active cellular repair, renewal & barrier moisture lock</p>
                   </div>
                 </div>

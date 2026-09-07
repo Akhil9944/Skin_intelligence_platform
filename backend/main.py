@@ -222,9 +222,12 @@ def get_user_adherence(
         "user_id": current_user.id,
         "adherence_percentage": metrics["adherence_percentage"],
         "streak_days": metrics["streak_days"],
-        "hydration_score_avg": metrics["hydration_avg"],
-        "sleep_score_avg": metrics["sleep_avg"],
-        "status_message": metrics["status_message"]
+        "hydration_score_avg": metrics["hydration_score_avg"],
+        "sleep_score_avg": metrics["sleep_score_avg"],
+        "status_message": metrics["status_message"],
+        "consistency_grade": metrics["consistency_grade"],
+        "ai_recommendation": metrics["ai_recommendation"],
+        "engine_type": metrics["engine_type"]
     }
 
 
@@ -245,5 +248,9 @@ def get_skin_progress_delta(
         "current_score": progress["current_score"],
         "previous_score": progress["previous_score"],
         "score_delta": progress["score_delta"],
-        "trend_direction": progress["trend_direction"]
+        "trend_direction": progress["trend_direction"],
+        "projected_score_7d": progress["projected_score_7d"],
+        "barrier_recovery_phase": progress["barrier_recovery_phase"],
+        "velocity_rate": progress["velocity_rate"],
+        "engine_type": progress["engine_type"]
     }

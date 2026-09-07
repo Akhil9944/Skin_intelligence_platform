@@ -77,6 +77,9 @@ class AdherenceResponse(BaseModel):
     hydration_score_avg: float
     sleep_score_avg: float
     status_message: str
+    consistency_grade: Optional[str] = "Optimal"
+    ai_recommendation: Optional[str] = "Maintain consistent hydration and sleep cycles."
+    engine_type: Optional[str] = "Random Forest Adherence Regressor"
 
     class Config:
         from_attributes = True
@@ -87,6 +90,10 @@ class ProgressDeltaResponse(BaseModel):
     previous_score: float
     score_delta: float
     trend_direction: str
+    projected_score_7d: float
+    barrier_recovery_phase: Optional[str] = "Barrier Stabilization"
+    velocity_rate: Optional[float] = 0.0
+    engine_type: Optional[str] = "Time-Series Predictive ML Forecaster"
 
     class Config:
         from_attributes = True

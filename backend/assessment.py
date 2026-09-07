@@ -4,11 +4,12 @@ import os
 import json
 from openai import OpenAI
 
-# Initialize OpenAI client configured for Google AI Studio (Gemini) securely via environment variables
+# Initialize OpenAI client configured for Google AI Studio (Gemini) securely if API key is provided
+_google_api_key = os.environ.get("GOOGLE_AI_STUDIO_API_KEY")
 client = OpenAI(
-    api_key=os.environ.get("GOOGLE_AI_STUDIO_API_KEY"),
+    api_key=_google_api_key,
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
-)
+) if _google_api_key else None
 
 # Load the trained ML regressor model artifact
 MODEL_PATH = "skin_score_model.pkl"
@@ -71,7 +72,7 @@ def generate_personalized_routine(skin_profile):
     concern = skin_profile.primary_concern if skin_profile else "General Care"
     is_sensitive = skin_profile.is_sensitive if skin_profile else False
 
-    if not os.environ.get("GOOGLE_AI_STUDIO_API_KEY"):
+    if not client or not os.environ.get("GOOGLE_AI_STUDIO_API_KEY"):
         morning = [
             {"step": "Cleansing", "product": "Gentle Hydrating Cleanser" if is_sensitive else "Foaming Gel Cleanser", "purpose": "Remove overnight impurities and balance pH."},
             {"step": "Treatment", "product": "Vitamin C Brightening Serum" if not is_sensitive else "Niacinamide Calming Serum", "purpose": f"Target {concern} and protect against environmental pollutants."},
@@ -122,7 +123,7 @@ def generate_personalized_routine(skin_profile):
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"}
         )
-        content = response.choices.message.content.strip()
+        content = response.choices[0].message.content.strip()
         
         if content.startswith("```"):
             content = content.split("```")[1]
@@ -148,7 +149,7 @@ def get_dermatologist_recommendations(skin_profile, latest_log):
     concern = skin_profile.primary_concern if skin_profile else "General Care"
     is_sensitive = skin_profile.is_sensitive if skin_profile else False
 
-    if not os.environ.get("GOOGLE_AI_STUDIO_API_KEY"):
+    if not client or not os.environ.get("GOOGLE_AI_STUDIO_API_KEY"):
         return {
             "score": current_score,
             "clinical_summary": "Maintain balanced hydration and stable daily habit logging.",
@@ -179,7 +180,7 @@ def get_dermatologist_recommendations(skin_profile, latest_log):
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"}
         )
-        content = response.choices.message.content.strip()
+        content = response.choices[0].message.content.strip()
         if content.startswith("```"):
             content = content.split("```")[1]
             if content.startswith("json"):

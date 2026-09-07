@@ -23,7 +23,8 @@ app.add_middleware(
         "http://127.0.0.1:3000", 
         "http://192.168.1.7:3000",
         "http://172.29.80.1:3000",
-        "http://192.168.201.243:3000"  # Added your current local network client origin
+        "http://192.168.201.243:3000",
+        "http://10.197.173.197:3000"
     ],
     allow_credentials=True,
     allow_methods=["*"],

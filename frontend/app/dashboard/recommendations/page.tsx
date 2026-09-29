@@ -4,8 +4,34 @@ import { useState, useEffect } from "react";
 import { Sparkles, ShieldCheck, AlertTriangle, RefreshCw } from "lucide-react";
 import Navbar from "@/app/components/Navbar";
 
+interface TriageConcern {
+  name: string;
+  tier: number;
+  priority_label: string;
+  is_harmful: boolean;
+  clinical_rationale: string;
+  recommended_actives: string[];
+  restricted_actives: string[];
+}
+
+interface ConcernTriage {
+  prioritized_list: TriageConcern[];
+  primary_target: TriageConcern;
+  secondary_targets: TriageConcern[];
+  has_harmful_concern: boolean;
+}
+
+interface RecommendationResponse {
+  score: number;
+  clinical_summary: string;
+  lifestyle_prescription: string[];
+  warning_notes: string;
+  concern_triage?: ConcernTriage;
+  priority_triage_rationale?: string;
+}
+
 export default function DermatologistRecommendationsPage() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<RecommendationResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

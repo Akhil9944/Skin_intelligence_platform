@@ -9,6 +9,11 @@ import models
 import schemas
 import security
 import assessment
+import ingredient_engine
+import product_engine
+import progress_engine
+import analytics_engine
+from pydantic import BaseModel
 
 Base.metadata.create_all(bind=engine)
 
@@ -19,11 +24,13 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000", 
         "http://127.0.0.1:3000", 
+        "http://192.168.201.40:3000",
         "http://192.168.1.7:3000",
         "http://172.29.80.1:3000",
         "http://192.168.201.243:3000",
         "http://10.197.173.197:3000"
     ],
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -186,7 +193,12 @@ def get_personalized_routine(
     if not profile:
         raise HTTPException(status_code=404, detail="Please create your Skin Profile first before generating a routine.")
         
-    return assessment.generate_personalized_routine(profile)
+    latest_log = db.query(models.DailyLog)\
+                     .filter(models.DailyLog.user_id == current_user.id)\
+                     .order_by(models.DailyLog.date_logged.desc())\
+                     .first()
+
+    return assessment.generate_personalized_routine(profile, latest_log)
 
 
 @app.get("/assessment/recommendations")
@@ -254,3 +266,112 @@ def get_skin_progress_delta(
         "velocity_rate": progress["velocity_rate"],
         "engine_type": progress["engine_type"]
     }
+
+
+# ==========================================
+# INGREDIENT INTELLIGENCE ENDPOINTS
+# ==========================================
+
+class IngredientAnalysisRequest(BaseModel):
+    ingredients_text: str
+    product_name: str = ""
+
+@app.post("/ingredients/analyze")
+def analyze_ingredients_endpoint(
+    payload: IngredientAnalysisRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user)
+):
+    profile = db.query(models.SkinProfile).filter(models.SkinProfile.user_id == current_user.id).first()
+    results = ingredient_engine.analyze_ingredients_formula(payload.ingredients_text, profile)
+    return {
+        "product_name": payload.product_name or "Custom Product Formula",
+        **results
+    }
+
+
+# ==========================================
+# PRODUCT RECOMMENDATION ENDPOINTS (AI & ML)
+# ==========================================
+
+@app.get("/products/recommendations")
+def get_recommended_products(
+    category: str = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user)
+):
+    profile = db.query(models.SkinProfile).filter(models.SkinProfile.user_id == current_user.id).first()
+    
+    skin_type = profile.skin_type if profile else "Normal"
+    primary_concern = profile.primary_concern if profile else "General Care"
+    is_sensitive = profile.is_sensitive if profile else False
+
+    results = product_engine.get_product_recommendations(
+        skin_type=skin_type,
+        primary_concern=primary_concern,
+        is_sensitive=is_sensitive,
+        category_filter=category
+    )
+    return results
+
+
+# ==========================================
+# PROGRESS TRACKING & HABIT ANALYTICS (AI & ML)
+# ==========================================
+
+@app.get("/analytics/detailed-progress")
+def get_user_detailed_progress(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user)
+):
+    profile = db.query(models.SkinProfile).filter(models.SkinProfile.user_id == current_user.id).first()
+    logs = db.query(models.DailyLog)\
+             .filter(models.DailyLog.user_id == current_user.id)\
+             .order_by(models.DailyLog.date_logged.desc())\
+             .all()
+
+    progress_data = progress_engine.get_detailed_progress(profile, logs)
+    return progress_data
+
+
+# ==========================================
+# SKINCARE ANALYTICS & SIMULATOR ENDPOINTS (AI & ML)
+# ==========================================
+
+class SimulationRequest(BaseModel):
+    sleep_hours: float
+    water_glasses: int
+    stress_level: int
+    sun_exposure_hours: float = 1.0
+
+@app.get("/analytics/skincare-insights")
+def get_skincare_insights(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user)
+):
+    profile = db.query(models.SkinProfile).filter(models.SkinProfile.user_id == current_user.id).first()
+    logs = db.query(models.DailyLog)\
+             .filter(models.DailyLog.user_id == current_user.id)\
+             .order_by(models.DailyLog.date_logged.desc())\
+             .all()
+
+    analytics_data = analytics_engine.get_skincare_analytics_payload(profile, logs)
+    return analytics_data
+
+@app.post("/analytics/simulate")
+def simulate_skin_score_endpoint(
+    payload: SimulationRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user)
+):
+    profile = db.query(models.SkinProfile).filter(models.SkinProfile.user_id == current_user.id).first()
+    results = analytics_engine.simulate_skin_score(
+        sleep_hours=payload.sleep_hours,
+        water_glasses=payload.water_glasses,
+        stress_level=payload.stress_level,
+        sun_exposure_hours=payload.sun_exposure_hours,
+        skin_profile=profile
+    )
+    return results
+
+

@@ -20,7 +20,9 @@ import {
   BarChart3,
   CheckCircle2,
   AlertCircle,
-  ScanLine
+  ScanLine,
+  Layers,
+  FileText
 } from "lucide-react";
 import Navbar from "@/app/components/Navbar";
 
@@ -180,6 +182,18 @@ export default function DashboardPage() {
               className="flex items-center gap-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-800 dark:text-slate-200 px-4 py-3 text-xs font-bold shadow-xs transition-all cursor-pointer"
             >
               <ScanLine className="w-4 h-4 text-indigo-500" /> Scan Product Label
+            </button>
+            <button
+              onClick={() => router.push("/dashboard/executive")}
+              className="flex items-center gap-2 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-3 text-xs font-bold shadow-xs transition-all hover:scale-102 cursor-pointer"
+            >
+              <Layers className="w-4 h-4 text-indigo-400 dark:text-indigo-600" /> Executive View
+            </button>
+            <button
+              onClick={() => router.push("/dashboard/reports")}
+              className="flex items-center gap-2 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 px-4 py-3 text-xs font-bold shadow-xs transition-all hover:scale-102 cursor-pointer"
+            >
+              <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Clinical Report
             </button>
           </div>
         </div>
@@ -394,6 +408,32 @@ export default function DashboardPage() {
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
                   Receive practical lifestyle precautions and tips to keep your skin calm.
                 </p>
+              </div>
+
+              {/* Clinical Report & 5-Point Visualizer Card */}
+              <div
+                onClick={() => router.push("/dashboard/reports")}
+                className="group cursor-pointer rounded-3xl border border-indigo-200/90 dark:border-indigo-800/80 bg-gradient-to-br from-indigo-50/40 via-white to-purple-50/30 dark:from-indigo-950/30 dark:via-slate-900 dark:to-purple-950/20 p-6 shadow-xs hover:border-indigo-500 dark:hover:border-indigo-500/60 hover:-translate-y-1 transition-all md:col-span-3 mt-1"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-white group-hover:scale-110 transition-all shadow-md shadow-indigo-600/20">
+                      <FileText className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white">Printable Clinical Skin Health Report</h3>
+                        <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold">New</span>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                        Download or print an official clinical skin health report featuring our interactive 5-Point Skin Balance Visualizer and AI doctor sign-off.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition-transform self-start sm:self-center shrink-0">
+                    Open Report <ArrowUpRight className="w-4 h-4" />
+                  </span>
+                </div>
               </div>
             </div>
           </div>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, LayoutDashboard, Activity, UserCheck, History as HistoryIcon, LogOut, ClipboardCheck, Sun, Moon, Stethoscope, Cpu, ShoppingBag, TrendingUp, BarChart3 } from "lucide-react";
+import { Sparkles, LayoutDashboard, Activity, UserCheck, History as HistoryIcon, LogOut, ClipboardCheck, Sun, Moon, Stethoscope, Cpu, ShoppingBag, TrendingUp, BarChart3, Layers, FileText } from "lucide-react";
 
 export default function Navbar() {
   const router = useRouter();
@@ -34,6 +34,8 @@ export default function Navbar() {
 
   const navItems = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { label: "Executive", href: "/dashboard/executive", icon: Layers },
+    { label: "Reports", href: "/dashboard/reports", icon: FileText },
     { label: "Routine & Score", href: "/dashboard/routine", icon: ClipboardCheck },
     { label: "Products", href: "/dashboard/products", icon: ShoppingBag },
     { label: "Progress", href: "/dashboard/progress", icon: TrendingUp },

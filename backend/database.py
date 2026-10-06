@@ -1,9 +1,19 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-# Replace mysecretpassword123 with your actual Supabase password
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:harsha123@localhost:5432/skincare_db"# Create the PostgreSQL engine
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL", 
+    "postgresql://postgres:harsha123@localhost:5432/skincare_db"
+)
+
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+else:
+    # Ensure postgresql connection strings work smoothly with the installed driver
+    if DATABASE_URL.startswith("postgresql://"):
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+    engine = create_engine(DATABASE_URL)
 
 # Create the session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

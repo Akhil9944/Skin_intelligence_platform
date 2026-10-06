@@ -5,8 +5,8 @@ from typing import Optional
 # USER & AUTHENTICATION SCHEMAS
 # ==========================================
 class UserCreate(BaseModel):
-    email: str
-    password: str
+    email: str = Field(..., min_length=3, description="User email address")
+    password: str = Field(..., min_length=6, description="Password must be at least 6 characters")
     role: str = "User"
 
 class UserResponse(BaseModel):
@@ -25,8 +25,8 @@ class Token(BaseModel):
 # SKIN PROFILE SCHEMAS
 # ==========================================
 class SkinProfileCreate(BaseModel):
-    skin_type: str
-    primary_concern: str
+    skin_type: str = Field(..., min_length=2, description="Skin type (e.g. Oily, Dry, Combination, Normal)")
+    primary_concern: str = Field(..., min_length=2, description="Primary skin concern (e.g. Acne, Redness)")
     is_sensitive: bool = False
 
 class SkinProfileResponse(BaseModel):

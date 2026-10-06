@@ -1,38 +1,52 @@
-version: '3.8'
-
 services:
-  # PostgreSQL: For relational data like Users and Roles
-  postgres:
-    image: postgres:15
-    container_name: skin_postgres
+  # 1. Database Service (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    container_name: skin_intelligence_db
+    restart: always
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: adminpassword
-      POSTGRES_DB: skin_intelligence
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: harsha123
+      POSTGRES_DB: skincare_db
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  # MongoDB: For flexible, document-based data like Skin Profiles
-  mongodb:
-    image: mongo:6.0
-    container_name: skin_mongodb
+  # 2. AI Backend Service (FastAPI + AI/ML Models)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: skin_intelligence_backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: adminpassword
+      - DATABASE_URL=postgresql+psycopg2://postgres:harsha123@db:5432/skincare_db
+      - GOOGLE_AI_STUDIO_API_KEY=${GOOGLE_AI_STUDIO_API_KEY:-}
     ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
+      - "8001:8001"
 
-  # Redis: For caching and fast background task processing
-  redis:
-    image: redis:7.0
-    container_name: skin_redis
+  # 3. User Frontend Service (Next.js Dashboard)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: skin_intelligence_frontend
+    restart: always
+    depends_on:
+      - backend
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8001
     ports:
-      - "6379:6379"
+      - "3000:3000"
 
 volumes:
   postgres_data:
-  mongodb_data:

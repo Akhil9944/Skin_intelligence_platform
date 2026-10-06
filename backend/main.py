@@ -13,7 +13,7 @@ import ingredient_engine
 import product_engine
 import progress_engine
 import analytics_engine
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 Base.metadata.create_all(bind=engine)
 
@@ -273,7 +273,7 @@ def get_skin_progress_delta(
 # ==========================================
 
 class IngredientAnalysisRequest(BaseModel):
-    ingredients_text: str
+    ingredients_text: str = Field(..., min_length=1, description="Ingredient list or cosmetic label text")
     product_name: str = ""
 
 @app.post("/ingredients/analyze")
@@ -339,10 +339,10 @@ def get_user_detailed_progress(
 # ==========================================
 
 class SimulationRequest(BaseModel):
-    sleep_hours: float
-    water_glasses: int
-    stress_level: int
-    sun_exposure_hours: float = 1.0
+    sleep_hours: float = Field(..., ge=0, le=24, description="Sleep hours between 0 and 24")
+    water_glasses: int = Field(..., ge=0, le=50, description="Glasses of water between 0 and 50")
+    stress_level: int = Field(..., ge=1, le=10, description="Stress level between 1 and 10")
+    sun_exposure_hours: float = Field(1.0, ge=0, le=24, description="Sun exposure between 0 and 24")
 
 @app.get("/analytics/skincare-insights")
 def get_skincare_insights(
@@ -373,5 +373,30 @@ def simulate_skin_score_endpoint(
         skin_profile=profile
     )
     return results
+
+@app.get("/analytics/executive-summary")
+def get_executive_summary_endpoint(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user)
+):
+    summary_data = analytics_engine.get_executive_dashboard_payload(db)
+    return summary_data
+
+
+@app.get("/analytics/clinical-report")
+def get_clinical_report_endpoint(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user)
+):
+    profile = db.query(models.SkinProfile).filter(models.SkinProfile.user_id == current_user.id).first()
+    logs = db.query(models.DailyLog)\
+             .filter(models.DailyLog.user_id == current_user.id)\
+             .order_by(models.DailyLog.date_logged.desc())\
+             .all()
+
+    report_data = analytics_engine.get_clinical_report_payload(profile, logs, current_user)
+    return report_data
+
+
 
 

@@ -19,6 +19,7 @@ import {
   PlusCircle 
 } from "lucide-react";
 import Navbar from "@/app/components/Navbar";
+import { getApiBase } from "@/app/apiConfig";
 
 interface HabitImpact {
   name: string;
@@ -74,7 +75,7 @@ export default function ProgressPage() {
         return;
       }
 
-      const res = await fetch("http://localhost:8001/analytics/detailed-progress", {
+      const res = await fetch(`${getApiBase()}/analytics/detailed-progress`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

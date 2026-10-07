@@ -84,6 +84,22 @@
 
 ---
 
+### Feature 5: Role-Based Clinical Dermatologist Portal & Patient Roster Management
+- **Routes**:
+  - `GET /dermatologist/patients` $\to$ List of registered patient cohorts, skin conditions, and clinical risk tiers.
+  - `GET /dermatologist/patient/{id}` $\to$ Deep-dive telemetry dossier, 7-day logs, ML urgency triage, and active regimens.
+  - `POST /dermatologist/patient/{id}/notes` $\to$ Clinician prescription and guidance note editor.
+  - Frontend Pages: [`/login/dermatologist`](file:///d:/infosys_springboard/skin-intelligence-platform/frontend/app/login/dermatologist/page.tsx) & [`/dashboard/dermatologist`](file:///d:/infosys_springboard/skin-intelligence-platform/frontend/app/dashboard/dermatologist/page.tsx).
+- **Purpose**: Provides certified medical practitioners and dermatologists with a dedicated clinical command center to review, triage, and prescribe care for all patients on the platform.
+- **Architectural & Security Highlights**:
+  - **Zero-Trust Role Verification**: `security.require_dermatologist` dependency blocks non-practitioner tokens with HTTP 403 Forbidden.
+  - **Cohort Clinical Triage**: Classifies patients into risk tiers (**High Risk**, **Moderate Risk**, **Stable**) based on Stratum Corneum barrier sensitivity, active cystic flare-ups, and chronic lifestyle stress levels.
+  - **Longitudinal Telemetry Dossier**: Displays 7-day sleep, hydration, and environmental UV/pollution records alongside Random Forest urgency attribution.
+  - **Prescription & Clinical Guidance Editor**: Allows doctors to record notes (e.g., *"Reduce direct acid frequency to 2x/week, introduce ceramide barrier repair"*), persisting changes directly to the database.
+  - **1-Click Demo Doctor Sign-In**: Quick credential button on `/login/dermatologist` allowing evaluators to immediately access pre-seeded patient clinical records.
+
+---
+
 ## 3. Exhaustive File-by-File Technical Directory
 
 Below is the complete reference of every file involved in Milestone 4, detailing its exact purpose, technologies, and exported functions.
@@ -100,13 +116,15 @@ Below is the complete reference of every file involved in Milestone 4, detailing
 | [`backend/tests/test_ml_models.py`](file:///d:/infosys_springboard/skin-intelligence-platform/backend/tests/test_ml_models.py) | PyTest, Joblib | • 6 unit tests verifying all 4 `.pkl` models (`skin_score_model`, `adherence_model`, `concern_priority_model`, `ingredient_safety_model`). |
 | [`backend/tests/test_engines.py`](file:///d:/infosys_springboard/skin-intelligence-platform/backend/tests/test_engines.py) | PyTest | • 12 tests validating TF-IDF product matching, INCI clash matrix, progress tracking, and radar calculation algorithms. |
 | [`backend/tests/test_validations.py`](file:///d:/infosys_springboard/skin-intelligence-platform/backend/tests/test_validations.py) | PyTest, Pydantic | • 11 boundary tests proving negative sleep, impossible water intake, and weak passwords get caught and rejected. |
-| [`backend/tests/test_api_endpoints.py`](file:///d:/infosys_springboard/skin-intelligence-platform/backend/tests/test_api_endpoints.py) | PyTest, FastAPI TestClient | • 19 integration tests covering registration, login, JWT authorization, logs, routines, simulation, and reports using SQLite in-memory. |
-| [`run_tests.py`](file:///d:/infosys_springboard/skin-intelligence-platform/run_tests.py) | Python CLI | • Master test runner executing all 4 test suites with formatted summary and colorized status report. |
+| [`backend/tests/test_api_endpoints.py`](file:///d:/infosys_springboard/skin-intelligence-platform/backend/tests/test_api_endpoints.py) | PyTest, FastAPI TestClient | • 23 integration tests covering registration, login, JWT authorization, logs, routines, simulation, reports, and Dermatologist endpoints. |
+| [`run_tests.py`](file:///d:/infosys_springboard/skin-intelligence-platform/run_tests.py) | Python CLI | • Master test runner executing all 4 test suites (52/52 tests passed, 100% pass rate). |
 | [`frontend/Dockerfile`](file:///d:/infosys_springboard/skin-intelligence-platform/frontend/Dockerfile) | Docker, Node 20 | • Multi-stage container recipe building Next.js 16 production bundle and serving on port `3000`. |
 | [`frontend/.dockerignore`](file:///d:/infosys_springboard/skin-intelligence-platform/frontend/.dockerignore) | Docker Ignore | • Excludes `.next/`, `node_modules/`, and local environment files from the build context. |
+| [`frontend/app/login/dermatologist/page.tsx`](file:///d:/infosys_springboard/skin-intelligence-platform/frontend/app/login/dermatologist/page.tsx) | Next.js, React, Tailwind | • Certified practitioner login portal with 1-click Demo Doctor sign-in and role verification. |
+| [`frontend/app/dashboard/dermatologist/page.tsx`](file:///d:/infosys_springboard/skin-intelligence-platform/frontend/app/dashboard/dermatologist/page.tsx) | Next.js, React, Tailwind | • Clinical command center with patient cohort table, 7-day telemetry dossier, ML triage, and prescription notes. |
 | [`frontend/app/dashboard/executive/page.tsx`](file:///d:/infosys_springboard/skin-intelligence-platform/frontend/app/dashboard/executive/page.tsx) | Next.js, React, Tailwind | • Executive dashboard screen with What-If interactive sliders, feature attribution cards, and dynamic risk dials. |
 | [`frontend/app/dashboard/reports/page.tsx`](file:///d:/infosys_springboard/skin-intelligence-platform/frontend/app/dashboard/reports/page.tsx) | Next.js, SVG, CSS Print | • Medical report screen with native SVG 5-point radar polygon, regimen steps, matched products, and `@media print` PDF support. |
-| [`frontend/app/components/Navbar.tsx`](file:///d:/infosys_springboard/skin-intelligence-platform/frontend/app/components/Navbar.tsx) | React, Lucide Icons | • Global navigation bar updated with direct links to "Executive" and "Reports". |
+| [`frontend/app/components/Navbar.tsx`](file:///d:/infosys_springboard/skin-intelligence-platform/frontend/app/components/Navbar.tsx) | React, Lucide Icons | • Global navigation bar updated with direct links to "Executive", "Reports", and "Derm Portal". |
 | [`docker-compose.yml`](file:///d:/infosys_springboard/skin-intelligence-platform/docker-compose.yml) | Docker Compose | • Orchestrates `db` (Postgres 15), `backend` (FastAPI), and `frontend` (Next.js) with bridge networking and healthchecks. |
 | [`DEPLOYMENT.md`](file:///d:/infosys_springboard/skin-intelligence-platform/DEPLOYMENT.md) | Markdown Guide | • Complete documentation for local Docker execution and cloud deployment instructions (Vercel + Render + Neon). |
 | [`.env.example`](file:///d:/infosys_springboard/skin-intelligence-platform/.env.example) | Environment Config | • Template documenting `DATABASE_URL`, `NEXT_PUBLIC_API_URL`, and `GOOGLE_AI_STUDIO_API_KEY`. |
@@ -115,11 +133,17 @@ Below is the complete reference of every file involved in Milestone 4, detailing
 
 ## 4. How to Present Milestone 4 to Evaluators (Step-by-Step Defense Flow)
 
-When presenting this milestone in your viva/review, follow this 4-step sequence:
+When presenting this milestone in your viva/review, follow this 5-step sequence:
 
 ### Step 1: Start with Architecture & Deployment (High Impact)
 - Open Docker Desktop or your terminal showing `docker compose ps` / `docker compose up`.
 - **Explain**: *"For Milestone 4, our entire platform is fully containerized using Docker. With a single command, Docker coordinates a PostgreSQL database, our FastAPI AI backend, and our Next.js frontend with isolated networking and persistent storage."*
+
+### Step 2: Showcase the Dermatologist Clinical Command Center (Doctor Role)
+- Open `http://localhost:3000/login/dermatologist` and click **"1-Click Demo Login"**.
+- Navigate around `http://localhost:3000/dashboard/dermatologist`.
+- Show the **Patient Roster**, click on a patient to open their **Clinical Dossier**, and edit their **Doctor Guidance Notes**.
+- **Explain**: *"Here is our dedicated Doctor Portal with role-based JWT authentication. Certified practitioners can monitor their entire patient cohort, filter by acute conditions like Acne or Barrier Distress, inspect 7-day lifestyle telemetry, and prescribe customized care instructions that persist directly in the database."*
 
 ### Step 2: Showcase the Executive Analytics & What-If Simulation
 - Navigate to `http://localhost:3000/dashboard/executive`.

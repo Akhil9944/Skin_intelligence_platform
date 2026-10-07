@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { History as HistoryIcon, Calendar, Moon, Droplets, Flame, Sun, CloudRain, ShieldAlert, PlusCircle, RefreshCw } from "lucide-react";
 import Navbar from "@/app/components/Navbar";
+import { getApiBase } from "@/app/apiConfig";
 
 interface DailyLog {
   id: string;
@@ -31,7 +32,7 @@ export default function HistoryPage() {
       }
 
       try {
-        const response = await fetch("http://localhost:8001/tracker/history", {
+        const response = await fetch(`${getApiBase()}/tracker/history`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

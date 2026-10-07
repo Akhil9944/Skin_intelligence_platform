@@ -21,6 +21,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import Navbar from "@/app/components/Navbar";
+import { getApiBase } from "@/app/apiConfig";
 
 interface MLModelInfo {
   model_name: string;
@@ -71,7 +72,7 @@ export default function ExecutiveDashboardPage() {
         return;
       }
 
-      const res = await fetch("http://localhost:8001/analytics/executive-summary", {
+      const res = await fetch(`${getApiBase()}/analytics/executive-summary`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

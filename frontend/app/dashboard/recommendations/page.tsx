@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Sparkles, ShieldCheck, AlertTriangle, RefreshCw } from "lucide-react";
 import Navbar from "@/app/components/Navbar";
+import { getApiBase } from "@/app/apiConfig";
 
 interface TriageConcern {
   name: string;
@@ -38,7 +39,7 @@ export default function DermatologistRecommendationsPage() {
     async function fetchRecommendations() {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:8001/assessment/recommendations", {
+        const res = await fetch(`${getApiBase()}/assessment/recommendations`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {

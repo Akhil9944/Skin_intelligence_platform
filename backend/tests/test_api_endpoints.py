@@ -293,6 +293,75 @@ class TestAPIEndpoints(unittest.TestCase):
         self.assertIn("evening_routine", data)
         self.assertIn("ai_clinical_signoff", data)
 
+    # ----------------------------------------------------
+    # 10. Dermatologist Clinical Portal Endpoints
+    # ----------------------------------------------------
+    def test_20_dermatologist_access_denied_for_regular_user(self):
+        """Verifies regular patients cannot access dermatologist endpoints (403 Forbidden)."""
+        response = self.client.get("/dermatologist/patients", headers=self.auth_headers)
+        self.assertEqual(response.status_code, 403, "Regular user must be forbidden from derm portal")
+
+    def test_21_dermatologist_registration_and_login(self):
+        """Verifies dermatologist can register, authenticate, and receive clinical token."""
+        derm_email = "test_derm@clinic.com"
+        # Register dermatologist
+        reg_res = self.client.post("/register", json={
+            "email": derm_email,
+            "password": "doctorPassword123",
+            "role": "Dermatologist"
+        })
+        self.assertEqual(reg_res.status_code, 201)
+        self.assertEqual(reg_res.json()["role"], "Dermatologist")
+
+        # Login dermatologist
+        login_res = self.client.post("/login", data={
+            "username": derm_email,
+            "password": "doctorPassword123"
+        })
+        self.assertEqual(login_res.status_code, 200)
+        data = login_res.json()
+        self.assertEqual(data["role"], "Dermatologist")
+
+        TestAPIEndpoints.derm_headers = {
+            "Authorization": f"Bearer {data['access_token']}"
+        }
+
+    def test_22_dermatologist_get_patients_list(self):
+        """Verifies dermatologist can view all patient records, skin concerns, and health scores."""
+        response = self.client.get("/dermatologist/patients", headers=self.derm_headers)
+        self.assertEqual(response.status_code, 200)
+        patients = response.json()
+        self.assertIsInstance(patients, list)
+        self.assertGreaterEqual(len(patients), 1)
+
+        # Check first patient record structure
+        first_patient = patients[0]
+        self.assertIn("user_id", first_patient)
+        self.assertIn("email", first_patient)
+        self.assertIn("skin_type", first_patient)
+        self.assertIn("primary_concern", first_patient)
+        self.assertIn("risk_level", first_patient)
+        self.assertIn("latest_score", first_patient)
+
+    def test_23_dermatologist_update_clinical_notes(self):
+        """Verifies dermatologist can prescribe and update clinical guidance notes."""
+        # Get patient list first to obtain a valid patient_id
+        patients_res = self.client.get("/dermatologist/patients", headers=self.derm_headers)
+        patient_id = patients_res.json()[0]["user_id"]
+
+        note_payload = {
+            "notes": "Recommend gentle polyhydroxy acid (PHA) and ceramide barrier moisturizer twice daily."
+        }
+        post_res = self.client.post(
+            f"/dermatologist/patient/{patient_id}/notes",
+            json=note_payload,
+            headers=self.derm_headers
+        )
+        self.assertEqual(post_res.status_code, 200)
+        data = post_res.json()
+        self.assertEqual(data["clinical_notes"], note_payload["notes"])
+
 
 if __name__ == "__main__":
     unittest.main()
+

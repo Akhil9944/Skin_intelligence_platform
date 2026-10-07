@@ -25,6 +25,7 @@ import {
   FileText
 } from "lucide-react";
 import Navbar from "@/app/components/Navbar";
+import { getApiBase } from "@/app/apiConfig";
 
 interface UserProfile {
   skin_type: string;
@@ -69,9 +70,9 @@ export default function DashboardPage() {
         
         // Fetch Profile, Detailed Progress, and Adherence in parallel
         const [profRes, progRes, adhRes] = await Promise.allSettled([
-          fetch("http://localhost:8001/profile", { headers }),
-          fetch("http://localhost:8001/analytics/detailed-progress", { headers }),
-          fetch("http://localhost:8001/analytics/adherence", { headers })
+          fetch(`${getApiBase()}/profile`, { headers }),
+          fetch(`${getApiBase()}/analytics/detailed-progress`, { headers }),
+          fetch(`${getApiBase()}/analytics/adherence`, { headers })
         ]);
 
         if (profRes.status === "fulfilled" && profRes.value.ok) {
@@ -430,9 +431,6 @@ export default function DashboardPage() {
                       </p>
                     </div>
                   </div>
-                  <span className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition-transform self-start sm:self-center shrink-0">
-                    Open Report <ArrowUpRight className="w-4 h-4" />
-                  </span>
                 </div>
               </div>
             </div>

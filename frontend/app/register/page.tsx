@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, Mail, Lock, ArrowRight, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { Sparkles, Mail, Lock, ArrowRight, ShieldCheck, CheckCircle2, Stethoscope, User } from "lucide-react";
+import { getApiBase } from "@/app/apiConfig";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("User");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -18,14 +20,18 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:8001/register", {
+      const response = await fetch(`${getApiBase()}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, role: "User" }),
+        body: JSON.stringify({ email, password, role }),
       });
 
       if (response.ok) {
-        router.push("/login");
+        if (role === "Dermatologist") {
+          router.push("/login/dermatologist");
+        } else {
+          router.push("/login");
+        }
       } else {
         const data = await response.json();
         setError(data.detail || "Registration failed. Please try again.");
@@ -100,6 +106,39 @@ export default function RegisterPage() {
                   {error}
                 </div>
               )}
+
+              {/* Role Selection */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Account Type
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRole("User")}
+                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold border transition-all ${
+                      role === "User"
+                        ? "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-600 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                        : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100"
+                    }`}
+                  >
+                    <User className="w-3.5 h-3.5" />
+                    Patient / User
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole("Dermatologist")}
+                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold border transition-all ${
+                      role === "Dermatologist"
+                        ? "bg-teal-50 dark:bg-teal-950/60 border-teal-600 text-teal-700 dark:text-teal-300 shadow-sm"
+                        : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100"
+                    }`}
+                  >
+                    <Stethoscope className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                    Dermatologist
+                  </button>
+                </div>
+              </div>
 
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">

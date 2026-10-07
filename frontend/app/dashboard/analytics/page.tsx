@@ -19,6 +19,7 @@ import {
   HelpCircle 
 } from "lucide-react";
 import Navbar from "@/app/components/Navbar";
+import { getApiBase } from "@/app/apiConfig";
 
 interface HabitWeight {
   habit: string;
@@ -81,7 +82,7 @@ export default function AnalyticsPage() {
         return;
       }
 
-      const res = await fetch("http://localhost:8001/analytics/skincare-insights", {
+      const res = await fetch(`${getApiBase()}/analytics/skincare-insights`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -118,7 +119,7 @@ export default function AnalyticsPage() {
     setSimulating(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:8001/analytics/simulate", {
+      const res = await fetch(`${getApiBase()}/analytics/simulate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

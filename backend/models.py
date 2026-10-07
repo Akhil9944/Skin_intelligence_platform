@@ -24,6 +24,7 @@ class SkinProfile(Base):
     skin_type = Column(String, index=True) 
     primary_concern = Column(String)       
     is_sensitive = Column(Boolean, default=False)
+    clinical_notes = Column(String, nullable=True)
     
     # This links the SkinProfile back to the User
     owner = relationship("User", back_populates="skin_profile")

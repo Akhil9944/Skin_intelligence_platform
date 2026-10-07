@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Sparkles, ShieldCheck, AlertTriangle, RefreshCw, Cpu, Zap, CheckCircle2, AlertOctagon, HelpCircle } from "lucide-react";
 import Navbar from "@/app/components/Navbar";
+import { getApiBase } from "@/app/apiConfig";
 
 interface ParsedIngredient {
   canonical_name: string;
@@ -68,7 +69,7 @@ export default function IngredientScannerPage() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:8001/ingredients/analyze", {
+      const res = await fetch(`${getApiBase()}/ingredients/analyze`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

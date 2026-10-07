@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Activity, Calendar, Moon, Droplets, Flame, Sun, CloudRain, ShieldAlert, CheckCircle2, AlertCircle } from "lucide-react";
 import Navbar from "@/app/components/Navbar";
+import { getApiBase } from "@/app/apiConfig";
 
 export default function TrackerSetupPage() {
   const router = useRouter();
@@ -30,7 +31,7 @@ export default function TrackerSetupPage() {
     }
 
     try {
-      const response = await fetch("http://localhost:8001/tracker/daily", {
+      const response = await fetch(`${getApiBase()}/tracker/daily`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

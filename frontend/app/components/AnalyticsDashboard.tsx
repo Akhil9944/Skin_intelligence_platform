@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getApiBase } from "@/app/apiConfig";
 import {
   Activity,
   TrendingUp,
@@ -60,8 +61,8 @@ export default function AnalyticsDashboard() {
 
       try {
         const [adhRes, progRes] = await Promise.all([
-          fetch("http://localhost:8001/analytics/adherence", { headers }),
-          fetch("http://localhost:8001/analytics/progress", { headers })
+          fetch(`${getApiBase()}/analytics/adherence`, { headers }),
+          fetch(`${getApiBase()}/analytics/progress`, { headers })
         ]);
 
         if (adhRes.ok && progRes.ok) {

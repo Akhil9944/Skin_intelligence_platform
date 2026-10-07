@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, ShieldCheck, Sun, Moon, Check, Filter, Search, ArrowRight, RefreshCw, ShoppingBag, Droplets, Heart } from "lucide-react";
 import Navbar from "@/app/components/Navbar";
+import { getApiBase } from "@/app/apiConfig";
 
 interface Product {
   id: string;
@@ -61,8 +62,8 @@ export default function ProductsPage() {
       }
 
       const url = category === "all" 
-        ? "http://localhost:8001/products/recommendations" 
-        : `http://localhost:8001/products/recommendations?category=${category}`;
+        ? `${getApiBase()}/products/recommendations` 
+        : `${getApiBase()}/products/recommendations?category=${category}`;
 
       const res = await fetch(url, {
         headers: {

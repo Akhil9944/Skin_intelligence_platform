@@ -1,10 +1,12 @@
+import os
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 
-from database import engine, Base, get_db
+from sqlalchemy import text
+from database import engine, Base, get_db, SessionLocal
 import models
 import schemas
 import security
@@ -16,21 +18,35 @@ import analytics_engine
 from pydantic import BaseModel, Field
 
 Base.metadata.create_all(bind=engine)
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE skin_profiles ADD COLUMN IF NOT EXISTS clinical_notes VARCHAR;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR DEFAULT 'User';"))
+except Exception as e:
+    print(f"Migration note: {e}")
 
 app = FastAPI(title="AI Skin Intelligence API")
 
+cors_origins = [
+    "http://localhost:3000", 
+    "http://127.0.0.1:3000", 
+    "http://192.168.201.40:3000",
+    "http://192.168.1.7:3000",
+    "http://172.29.80.1:3000",
+    "http://192.168.201.243:3000",
+    "http://10.197.173.197:3000"
+]
+frontend_env = os.environ.get("FRONTEND_URL")
+if frontend_env:
+    for url in frontend_env.split(","):
+        cleaned = url.strip()
+        if cleaned and cleaned not in cors_origins:
+            cors_origins.append(cleaned)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000", 
-        "http://127.0.0.1:3000", 
-        "http://192.168.201.40:3000",
-        "http://192.168.1.7:3000",
-        "http://172.29.80.1:3000",
-        "http://192.168.201.243:3000",
-        "http://10.197.173.197:3000"
-    ],
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?$",
+    allow_origins=cors_origins,
+    allow_origin_regex=r"^https?://([a-zA-Z0-9_-]+\.)*vercel\.app(:[0-9]+)?$|^https?://(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -74,7 +90,12 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
     access_token = security.create_access_token(
         data={"sub": user.email, "role": user.role, "user_id": user.id}
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "role": user.role,
+        "email": user.email
+    }
 
 
 # ==========================================
@@ -396,6 +417,284 @@ def get_clinical_report_endpoint(
 
     report_data = analytics_engine.get_clinical_report_payload(profile, logs, current_user)
     return report_data
+
+
+# ==========================================
+# DERMATOLOGIST CLINICAL PORTAL ENDPOINTS
+# ==========================================
+
+@app.get("/dermatologist/patients", response_model=List[schemas.PatientSummaryItem])
+def get_dermatologist_patients(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.require_dermatologist)
+):
+    """
+    Returns all registered patients with their clinical profiles,
+    latest health scores, and risk classifications for certified dermatologists.
+    """
+    users = db.query(models.User).filter(
+        (models.User.role.is_(None)) | 
+        (~models.User.role.ilike("dermatologist"))
+    ).order_by(models.User.id.desc()).all()
+    patient_list = []
+
+    for user in users:
+        profile = db.query(models.SkinProfile).filter(models.SkinProfile.user_id == user.id).first()
+        logs = db.query(models.DailyLog)\
+                 .filter(models.DailyLog.user_id == user.id)\
+                 .order_by(models.DailyLog.date_logged.desc())\
+                 .all()
+
+        total_logs = len(logs)
+        latest_log_date = logs[0].date_logged if logs else None
+
+        avg_stress = round(sum(l.stress_level for l in logs) / total_logs, 1) if total_logs > 0 else 5.0
+        avg_sleep = round(sum(l.sleep_hours for l in logs) / total_logs, 1) if total_logs > 0 else 7.0
+        avg_water = round(sum(l.water_glasses for l in logs) / total_logs) if total_logs > 0 else 8
+
+        if profile and logs:
+            sim = analytics_engine.simulate_skin_score(
+                sleep_hours=avg_sleep,
+                water_glasses=int(avg_water),
+                stress_level=int(round(avg_stress)),
+                sun_exposure_hours=1.0,
+                skin_profile=profile
+            )
+            calculated_score = sim.get("predicted_score", 75.0)
+        else:
+            calculated_score = 75.0
+
+        skin_type = profile.skin_type if profile else "Not Set"
+        primary_concern = profile.primary_concern if profile else "Not Set"
+        is_sensitive = profile.is_sensitive if profile else False
+        clinical_notes = profile.clinical_notes if profile else None
+
+        has_high_concern = any(c in primary_concern.lower() for c in ["acne", "rosacea", "barrier", "redness", "inflam"])
+        has_mod_concern = any(c in primary_concern.lower() for c in ["pigment", "pore", "texture", "damage"])
+
+        if is_sensitive and (has_high_concern or avg_stress >= 7):
+            risk_level = "High Risk"
+        elif has_high_concern or has_mod_concern or avg_stress >= 6:
+            risk_level = "Moderate Risk"
+        else:
+            risk_level = "Stable"
+
+        patient_list.append(schemas.PatientSummaryItem(
+            user_id=user.id,
+            email=user.email,
+            skin_type=skin_type,
+            primary_concern=primary_concern,
+            is_sensitive=is_sensitive,
+            clinical_notes=clinical_notes,
+            latest_score=round(calculated_score, 1),
+            latest_log_date=latest_log_date,
+            total_logs=total_logs,
+            average_stress=avg_stress,
+            average_sleep=avg_sleep,
+            average_water=avg_water,
+            risk_level=risk_level
+        ))
+
+    return patient_list
+
+
+@app.get("/dermatologist/patient/{patient_id}")
+def get_patient_clinical_detail(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.require_dermatologist)
+):
+    """
+    Returns deep clinical telemetry, full daily logs, skin profile, 
+    ML concern urgency triage, routine, and matched products for a specific patient.
+    """
+    patient = db.query(models.User).filter(models.User.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    profile = db.query(models.SkinProfile).filter(models.SkinProfile.user_id == patient.id).first()
+    logs = db.query(models.DailyLog)\
+             .filter(models.DailyLog.user_id == patient.id)\
+             .order_by(models.DailyLog.date_logged.desc())\
+             .all()
+
+    report_data = analytics_engine.get_clinical_report_payload(profile, logs, patient)
+
+    daily_log_dict = {
+        "stress_level": logs[0].stress_level if logs else 5,
+        "sleep_hours": logs[0].sleep_hours if logs else 7.0,
+        "water_glasses": logs[0].water_glasses if logs else 8,
+        "sun_exposure_hours": logs[0].sun_exposure_hours if logs else 1.0,
+    }
+    priorities = assessment.prioritize_skin_concerns(
+        profile.skin_type if profile else "Combination",
+        [profile.primary_concern] if profile and profile.primary_concern else ["Acne"],
+        daily_log_dict,
+        profile.is_sensitive if profile else False
+    )
+
+    serialized_logs = [
+        {
+            "id": l.id,
+            "date_logged": l.date_logged,
+            "sleep_hours": l.sleep_hours,
+            "water_glasses": l.water_glasses,
+            "stress_level": l.stress_level,
+            "sun_exposure_hours": l.sun_exposure_hours,
+            "weather_condition": l.weather_condition,
+            "pollution_exposure": l.pollution_exposure
+        }
+        for l in logs[:14]
+    ]
+
+    return {
+        "patient": {
+            "id": patient.id,
+            "email": patient.email,
+            "role": patient.role,
+        },
+        "profile": {
+            "skin_type": profile.skin_type if profile else "Not Set",
+            "primary_concern": profile.primary_concern if profile else "Not Set",
+            "is_sensitive": profile.is_sensitive if profile else False,
+            "clinical_notes": profile.clinical_notes if profile else ""
+        } if profile else None,
+        "logs": serialized_logs,
+        "clinical_report": report_data,
+        "priorities": priorities
+    }
+
+
+@app.post("/dermatologist/patient/{patient_id}/notes")
+def update_patient_clinical_notes(
+    patient_id: int,
+    payload: schemas.DermatologistNoteUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.require_dermatologist)
+):
+    """
+    Saves or updates clinical guidance notes from the dermatologist for a specific patient.
+    """
+    patient = db.query(models.User).filter(models.User.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    profile = db.query(models.SkinProfile).filter(models.SkinProfile.user_id == patient.id).first()
+    if not profile:
+        profile = models.SkinProfile(
+            user_id=patient.id,
+            skin_type="Combination",
+            primary_concern="Acne",
+            is_sensitive=False,
+            clinical_notes=payload.notes
+        )
+        db.add(profile)
+    else:
+        profile.clinical_notes = payload.notes
+
+    db.commit()
+    db.refresh(profile)
+    return {
+        "message": "Clinical notes updated successfully",
+        "patient_id": patient.id,
+        "clinical_notes": profile.clinical_notes
+    }
+
+
+@app.on_event("startup")
+def seed_initial_dermatologist_data():
+    """Seeds default dermatologist credentials and realistic demo patients if database is empty."""
+    db = SessionLocal()
+    try:
+        derm = db.query(models.User).filter(models.User.email == "dermatologist@clinic.com").first()
+        if not derm:
+            derm = models.User(
+                email="dermatologist@clinic.com",
+                hashed_password=security.get_password_hash("doctor123"),
+                role="Dermatologist"
+            )
+            db.add(derm)
+            db.commit()
+
+        # Ensure demo clinic patients exist for rich review walkthroughs
+        demo_patients = [
+            {
+                "email": "emma.watson@dermaclinic.com",
+                "password": "patient123",
+                "skin_type": "Oily",
+                "primary_concern": "Acne",
+                "is_sensitive": True,
+                "clinical_notes": "Patient reports flare-ups along jawline during high-stress periods. Advised non-comedogenic gel cleanser and salicylic acid 2% serum.",
+                "logs": [
+                    {"date": "2026-10-06", "sleep": 5.0, "water": 4, "stress": 9, "sun": 1.5, "weather": "Humid", "pollution": "Moderate"},
+                    {"date": "2026-10-05", "sleep": 5.5, "water": 5, "stress": 8, "sun": 2.0, "weather": "Sunny", "pollution": "Low"},
+                    {"date": "2026-10-04", "sleep": 6.0, "water": 6, "stress": 7, "sun": 1.0, "weather": "Cloudy", "pollution": "Low"},
+                ]
+            },
+            {
+                "email": "alex.chen@dermaclinic.com",
+                "password": "patient123",
+                "skin_type": "Dry",
+                "primary_concern": "Barrier Distress",
+                "is_sensitive": True,
+                "clinical_notes": "Transepidermal water loss after excessive retinoid use. Recommended halting direct acids and focusing on ceramide lipid repair.",
+                "logs": [
+                    {"date": "2026-10-06", "sleep": 7.0, "water": 6, "stress": 6, "sun": 0.5, "weather": "Dry", "pollution": "Low"},
+                    {"date": "2026-10-05", "sleep": 6.5, "water": 5, "stress": 7, "sun": 1.0, "weather": "Windy", "pollution": "Low"},
+                ]
+            },
+            {
+                "email": "priya.patel@dermaclinic.com",
+                "password": "patient123",
+                "skin_type": "Combination",
+                "primary_concern": "Hyperpigmentation",
+                "is_sensitive": False,
+                "clinical_notes": "Post-inflammatory hyperpigmentation following sun exposure. Strict daily SPF 50+ compliance with vitamin C antioxidant shield.",
+                "logs": [
+                    {"date": "2026-10-06", "sleep": 7.5, "water": 8, "stress": 4, "sun": 3.5, "weather": "Sunny", "pollution": "Moderate"},
+                    {"date": "2026-10-05", "sleep": 8.0, "water": 9, "stress": 3, "sun": 4.0, "weather": "Sunny", "pollution": "Moderate"},
+                ]
+            }
+        ]
+
+        for p in demo_patients:
+            existing_u = db.query(models.User).filter(models.User.email == p["email"]).first()
+            if not existing_u:
+                u = models.User(
+                    email=p["email"],
+                    hashed_password=security.get_password_hash(p["password"]),
+                    role="User"
+                )
+                db.add(u)
+                db.commit()
+                db.refresh(u)
+
+                prof = models.SkinProfile(
+                    user_id=u.id,
+                    skin_type=p["skin_type"],
+                    primary_concern=p["primary_concern"],
+                    is_sensitive=p["is_sensitive"],
+                    clinical_notes=p["clinical_notes"]
+                )
+                db.add(prof)
+                db.commit()
+
+                for l in p["logs"]:
+                    dlog = models.DailyLog(
+                        user_id=u.id,
+                        date_logged=l["date"],
+                        sleep_hours=l["sleep"],
+                        water_glasses=l["water"],
+                        stress_level=l["stress"],
+                        sun_exposure_hours=l["sun"],
+                        weather_condition=l["weather"],
+                        pollution_exposure=l["pollution"]
+                    )
+                    db.add(dlog)
+                db.commit()
+    finally:
+        db.close()
+
 
 
 

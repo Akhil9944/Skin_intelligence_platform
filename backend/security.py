@@ -57,3 +57,12 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
         
     return user
+
+def require_dermatologist(current_user: models.User = Depends(get_current_user)) -> models.User:
+    """Dependency that restricts endpoints to Dermatologists, Doctors, or Admins."""
+    if not current_user.role or current_user.role.lower() not in ["dermatologist", "doctor", "admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access restricted to certified dermatologists"
+        )
+    return current_user

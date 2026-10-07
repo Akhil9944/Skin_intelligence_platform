@@ -10,9 +10,13 @@ export default function Navbar() {
   const pathname = usePathname();
   const [darkMode, setDarkMode] = useState(false);
 
+  const [isDermatologist, setIsDermatologist] = useState(false);
+
   useEffect(() => {
     const isDark = document.documentElement.classList.contains("dark");
     setDarkMode(isDark);
+    const userRole = localStorage.getItem("role");
+    setIsDermatologist(userRole === "Dermatologist");
   }, []);
 
   const toggleTheme = () => {
@@ -29,6 +33,8 @@ export default function Navbar() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("email");
     router.push("/login");
   };
 
@@ -41,7 +47,6 @@ export default function Navbar() {
     { label: "Progress", href: "/dashboard/progress", icon: TrendingUp },
     { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
     { label: "Ingredients", href: "/dashboard/ingredients", icon: Cpu },
-    { label: "Advisory", href: "/dashboard/recommendations", icon: Stethoscope },
     { label: "Tracker", href: "/dashboard/tracker", icon: Activity },
     { label: "Profile", href: "/dashboard/profile", icon: UserCheck },
     { label: "History", href: "/dashboard/history", icon: HistoryIcon },

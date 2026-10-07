@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Sliders, AlertCircle, CheckCircle2, Droplets, Sparkles, Shield, Wind, X, Plus, AlertTriangle } from "lucide-react";
 import Navbar from "@/app/components/Navbar";
+import { getApiBase } from "@/app/apiConfig";
 
 export default function ProfileSetupPage() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function ProfileSetupPage() {
   const [isSensitive, setIsSensitive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
   const skinTypes = [
     { id: "Oily", title: "Oily", desc: "Excess sebum, prone to shine & enlarged pores", icon: Droplets },
@@ -55,7 +57,7 @@ export default function ProfileSetupPage() {
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    fetch("http://localhost:8001/profile", {
+    fetch(`${getApiBase()}/profile`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then((res) => (res.ok ? res.json() : null))
@@ -92,10 +94,11 @@ export default function ProfileSetupPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setLoading(true);
     setError("");
+    setSuccess(false);
 
     if (selectedConcerns.length === 0) {
       setError("Please select at least one skin concern.");
@@ -110,7 +113,7 @@ export default function ProfileSetupPage() {
     }
 
     try {
-      const response = await fetch("http://localhost:8001/profile", {
+      const response = await fetch(`${getApiBase()}/profile`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -124,7 +127,10 @@ export default function ProfileSetupPage() {
       });
 
       if (response.ok) {
-        router.push("/dashboard");
+        setSuccess(true);
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 1000);
       } else {
         const data = await response.json();
         setError(data.detail || "Failed to save skin profile.");
@@ -156,6 +162,13 @@ export default function ProfileSetupPage() {
             {error && (
               <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 p-4 rounded-2xl text-xs font-semibold flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" /> {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-300 p-4 rounded-2xl text-xs font-semibold flex items-center gap-2 animate-fade-in">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span>Skin profile saved successfully! Redirecting to dashboard...</span>
               </div>
             )}
 
@@ -358,10 +371,23 @@ export default function ProfileSetupPage() {
               </button>
               <button
                 type="submit"
-                disabled={loading}
-                className="w-2/3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3.5 text-xs font-bold shadow-lg shadow-indigo-600/25 hover:scale-101 transition-all disabled:opacity-50 cursor-pointer"
+                onClick={(e) => handleSubmit(e)}
+                disabled={loading || success}
+                className="w-2/3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3.5 text-xs font-bold shadow-lg shadow-indigo-600/25 hover:scale-101 transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
               >
-                {loading ? "Saving Profile..." : "Save Skin Profile"}
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Saving Profile...</span>
+                  </>
+                ) : success ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    <span>Profile Saved!</span>
+                  </>
+                ) : (
+                  <span>Save Skin Profile</span>
+                )}
               </button>
             </div>
           </form>

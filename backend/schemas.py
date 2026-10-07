@@ -20,6 +20,8 @@ class UserResponse(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    role: Optional[str] = "User"
+    email: Optional[str] = None
 
 # ==========================================
 # SKIN PROFILE SCHEMAS
@@ -35,6 +37,7 @@ class SkinProfileResponse(BaseModel):
     skin_type: str
     primary_concern: str
     is_sensitive: bool
+    clinical_notes: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -97,3 +100,24 @@ class ProgressDeltaResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# ==========================================
+# DERMATOLOGIST PORTAL SCHEMAS
+# ==========================================
+class DermatologistNoteUpdate(BaseModel):
+    notes: str = Field(..., min_length=1, description="Clinical guidance and dermatologist notes")
+
+class PatientSummaryItem(BaseModel):
+    user_id: int
+    email: str
+    skin_type: str = "Unknown"
+    primary_concern: str = "None"
+    is_sensitive: bool = False
+    clinical_notes: Optional[str] = None
+    latest_score: float = 75.0
+    latest_log_date: Optional[str] = None
+    total_logs: int = 0
+    average_stress: float = 5.0
+    average_sleep: float = 7.0
+    average_water: int = 8
+    risk_level: str = "Stable"

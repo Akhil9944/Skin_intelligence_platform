@@ -23,6 +23,7 @@ import {
   Info
 } from "lucide-react";
 import Navbar from "@/app/components/Navbar";
+import { getApiBase } from "@/app/apiConfig";
 
 interface RadarPoint {
   id: string;
@@ -103,7 +104,7 @@ export default function ClinicalReportPage() {
 
     async function fetchReport() {
       try {
-        const res = await fetch("http://localhost:8001/analytics/clinical-report", {
+        const res = await fetch(`${getApiBase()}/analytics/clinical-report`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (!res.ok) {

@@ -24,6 +24,7 @@ import {
   Zap
 } from "lucide-react";
 import Navbar from "@/app/components/Navbar";
+import { getApiBase } from "@/app/apiConfig";
 
 interface RoutineStep {
   step?: string;
@@ -115,10 +116,10 @@ export default function RoutineAssessmentPage() {
 
       try {
         const [scoreRes, routineRes] = await Promise.all([
-          fetch("http://localhost:8001/assessment/score", {
+          fetch(`${getApiBase()}/assessment/score`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch("http://localhost:8001/routine/generate", {
+          fetch(`${getApiBase()}/routine/generate`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);

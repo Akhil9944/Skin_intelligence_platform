@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, Mail, Lock, LogIn, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { Sparkles, Mail, Lock, LogIn, ShieldCheck, CheckCircle2, Stethoscope } from "lucide-react";
+import { getApiBase } from "@/app/apiConfig";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -18,7 +19,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const response = await fetch("http://127.0.0.1:8001/login", {
+      const response = await fetch(`${getApiBase()}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ username: email, password }),
@@ -28,7 +29,14 @@ export default function LoginPage() {
 
       if (response.ok) {
         localStorage.setItem("token", data.access_token);
-        router.push("/dashboard");
+        if (data.role) localStorage.setItem("role", data.role);
+        if (data.email) localStorage.setItem("email", data.email);
+
+        if (data.role === "Dermatologist") {
+          router.push("/dashboard/dermatologist");
+        } else {
+          router.push("/dashboard");
+        }
       } else {
         setError(data.detail || "Invalid credentials. Please verify email and password.");
       }
@@ -52,7 +60,14 @@ export default function LoginPage() {
           </div>
           <span className="text-base font-bold tracking-tight text-slate-900 dark:text-white">Skin Intelligence</span>
         </Link>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/login/dermatologist"
+            className="rounded-full bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 hover:bg-teal-100 dark:hover:bg-teal-900/60 px-3.5 py-1.5 text-xs font-bold text-teal-700 dark:text-teal-300 transition-colors flex items-center gap-1.5"
+          >
+            <Stethoscope className="w-3.5 h-3.5" />
+            Doctor Portal
+          </Link>
           <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">Need an account?</span>
           <Link
             href="/register"
@@ -161,6 +176,21 @@ export default function LoginPage() {
                   Create one now
                 </Link>
               </p>
+
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80">
+                <Link
+                  href="/login/dermatologist"
+                  className="flex items-center justify-between p-3 rounded-2xl bg-teal-50/60 dark:bg-teal-950/40 border border-teal-200/60 dark:border-teal-800/60 text-teal-800 dark:text-teal-200 hover:bg-teal-100/60 dark:hover:bg-teal-900/40 transition-colors text-xs font-semibold group"
+                >
+                  <span className="flex items-center gap-2">
+                    <Stethoscope className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                    Are you a Dermatologist?
+                  </span>
+                  <span className="text-[11px] font-bold text-teal-600 dark:text-teal-400 group-hover:underline">
+                    Access Doctor Portal &rarr;
+                  </span>
+                </Link>
+              </div>
             </form>
           </div>
         </div>

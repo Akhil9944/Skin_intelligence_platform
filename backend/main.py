@@ -526,9 +526,10 @@ def get_patient_clinical_detail(
         "water_glasses": logs[0].water_glasses if logs else 8,
         "sun_exposure_hours": logs[0].sun_exposure_hours if logs else 1.0,
     }
+    concerns_list = [c.strip() for c in profile.primary_concern.split(",") if c.strip()] if profile and profile.primary_concern else ["Acne"]
     priorities = assessment.prioritize_skin_concerns(
         profile.skin_type if profile else "Combination",
-        [profile.primary_concern] if profile and profile.primary_concern else ["Acne"],
+        concerns_list,
         daily_log_dict,
         profile.is_sensitive if profile else False
     )
@@ -603,7 +604,7 @@ def update_patient_clinical_notes(
 
 @app.on_event("startup")
 def seed_initial_dermatologist_data():
-    """Seeds default dermatologist credentials and realistic demo patients if database is empty."""
+    """Seeds default dermatologist credentials if not already present in the database."""
     db = SessionLocal()
     try:
         derm = db.query(models.User).filter(models.User.email == "dermatologist@clinic.com").first()
@@ -615,85 +616,9 @@ def seed_initial_dermatologist_data():
             )
             db.add(derm)
             db.commit()
-
-        # Ensure demo clinic patients exist for rich review walkthroughs
-        demo_patients = [
-            {
-                "email": "emma.watson@dermaclinic.com",
-                "password": "patient123",
-                "skin_type": "Oily",
-                "primary_concern": "Acne",
-                "is_sensitive": True,
-                "clinical_notes": "Patient reports flare-ups along jawline during high-stress periods. Advised non-comedogenic gel cleanser and salicylic acid 2% serum.",
-                "logs": [
-                    {"date": "2026-10-06", "sleep": 5.0, "water": 4, "stress": 9, "sun": 1.5, "weather": "Humid", "pollution": "Moderate"},
-                    {"date": "2026-10-05", "sleep": 5.5, "water": 5, "stress": 8, "sun": 2.0, "weather": "Sunny", "pollution": "Low"},
-                    {"date": "2026-10-04", "sleep": 6.0, "water": 6, "stress": 7, "sun": 1.0, "weather": "Cloudy", "pollution": "Low"},
-                ]
-            },
-            {
-                "email": "alex.chen@dermaclinic.com",
-                "password": "patient123",
-                "skin_type": "Dry",
-                "primary_concern": "Barrier Distress",
-                "is_sensitive": True,
-                "clinical_notes": "Transepidermal water loss after excessive retinoid use. Recommended halting direct acids and focusing on ceramide lipid repair.",
-                "logs": [
-                    {"date": "2026-10-06", "sleep": 7.0, "water": 6, "stress": 6, "sun": 0.5, "weather": "Dry", "pollution": "Low"},
-                    {"date": "2026-10-05", "sleep": 6.5, "water": 5, "stress": 7, "sun": 1.0, "weather": "Windy", "pollution": "Low"},
-                ]
-            },
-            {
-                "email": "priya.patel@dermaclinic.com",
-                "password": "patient123",
-                "skin_type": "Combination",
-                "primary_concern": "Hyperpigmentation",
-                "is_sensitive": False,
-                "clinical_notes": "Post-inflammatory hyperpigmentation following sun exposure. Strict daily SPF 50+ compliance with vitamin C antioxidant shield.",
-                "logs": [
-                    {"date": "2026-10-06", "sleep": 7.5, "water": 8, "stress": 4, "sun": 3.5, "weather": "Sunny", "pollution": "Moderate"},
-                    {"date": "2026-10-05", "sleep": 8.0, "water": 9, "stress": 3, "sun": 4.0, "weather": "Sunny", "pollution": "Moderate"},
-                ]
-            }
-        ]
-
-        for p in demo_patients:
-            existing_u = db.query(models.User).filter(models.User.email == p["email"]).first()
-            if not existing_u:
-                u = models.User(
-                    email=p["email"],
-                    hashed_password=security.get_password_hash(p["password"]),
-                    role="User"
-                )
-                db.add(u)
-                db.commit()
-                db.refresh(u)
-
-                prof = models.SkinProfile(
-                    user_id=u.id,
-                    skin_type=p["skin_type"],
-                    primary_concern=p["primary_concern"],
-                    is_sensitive=p["is_sensitive"],
-                    clinical_notes=p["clinical_notes"]
-                )
-                db.add(prof)
-                db.commit()
-
-                for l in p["logs"]:
-                    dlog = models.DailyLog(
-                        user_id=u.id,
-                        date_logged=l["date"],
-                        sleep_hours=l["sleep"],
-                        water_glasses=l["water"],
-                        stress_level=l["stress"],
-                        sun_exposure_hours=l["sun"],
-                        weather_condition=l["weather"],
-                        pollution_exposure=l["pollution"]
-                    )
-                    db.add(dlog)
-                db.commit()
     finally:
         db.close()
+
 
 
 

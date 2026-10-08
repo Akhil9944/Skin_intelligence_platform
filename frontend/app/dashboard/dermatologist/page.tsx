@@ -227,6 +227,15 @@ export default function DermatologistPortalPage() {
       ? (patients.reduce((acc, curr) => acc + curr.latest_score, 0) / patients.length).toFixed(1)
       : "75.0";
 
+  // Dynamic concern list derived from real patient roster
+  const availableConcerns = Array.from(
+    new Set(
+      patients
+        .flatMap((p) => (p.primary_concern ? p.primary_concern.split(",").map((c) => c.trim()) : []))
+        .filter((c) => c && c !== "Not Set")
+    )
+  );
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors">
       {/* Dedicated Dermatologist Header */}
@@ -406,12 +415,12 @@ export default function DermatologistPortalPage() {
               aria-label="Filter by Skin Concern"
               className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none"
             >
-              <option value="All">All Concerns</option>
-              <option value="Acne">Acne</option>
-              <option value="Barrier Distress">Barrier Distress</option>
-              <option value="Hyperpigmentation">Hyperpigmentation</option>
-              <option value="Rosacea">Rosacea</option>
-              <option value="Aging">Aging</option>
+              <option value="All">All Concerns ({patients.length})</option>
+              {availableConcerns.map((concern) => (
+                <option key={concern} value={concern}>
+                  {concern}
+                </option>
+              ))}
             </select>
 
             <select

@@ -612,9 +612,10 @@ def update_patient_clinical_notes(
 
 @app.on_event("startup")
 def seed_initial_dermatologist_data():
-    """Seeds default dermatologist credentials if not already present in the database."""
+    """Seeds default dermatologist credentials and permanently purges any legacy fake demo accounts."""
     db = SessionLocal()
     try:
+        # 1. Ensure dermatologist account exists
         derm = db.query(models.User).filter(models.User.email == "dermatologist@clinic.com").first()
         if not derm:
             derm = models.User(
@@ -624,6 +625,20 @@ def seed_initial_dermatologist_data():
             )
             db.add(derm)
             db.commit()
+
+        # 2. Permanently purge legacy fake/demo accounts
+        fake_emails = [
+            "emma.watson@dermaclinic.com",
+            "alex.chen@dermaclinic.com",
+            "priya.patel@dermaclinic.com"
+        ]
+        for fake_email in fake_emails:
+            fake_u = db.query(models.User).filter(models.User.email == fake_email).first()
+            if fake_u:
+                db.query(models.DailyLog).filter(models.DailyLog.user_id == fake_u.id).delete()
+                db.query(models.SkinProfile).filter(models.SkinProfile.user_id == fake_u.id).delete()
+                db.delete(fake_u)
+                db.commit()
     finally:
         db.close()
 

@@ -520,19 +520,27 @@ def get_patient_clinical_detail(
 
     report_data = analytics_engine.get_clinical_report_payload(profile, logs, patient)
 
-    daily_log_dict = {
-        "stress_level": logs[0].stress_level if logs else 5,
-        "sleep_hours": logs[0].sleep_hours if logs else 7.0,
-        "water_glasses": logs[0].water_glasses if logs else 8,
-        "sun_exposure_hours": logs[0].sun_exposure_hours if logs else 1.0,
-    }
-    concerns_list = [c.strip() for c in profile.primary_concern.split(",") if c.strip()] if profile and profile.primary_concern else ["Acne"]
-    priorities = assessment.prioritize_skin_concerns(
-        profile.skin_type if profile else "Combination",
-        concerns_list,
-        daily_log_dict,
-        profile.is_sensitive if profile else False
+    concerns_str = profile.primary_concern if profile and profile.primary_concern else "General Skin Health"
+    is_sens = profile.is_sensitive if profile else False
+    st = profile.skin_type if profile else "Normal"
+    latest_l = logs[0] if logs else None
+
+    priorities_result = assessment.prioritize_skin_concerns(
+        concerns_str=concerns_str,
+        is_sensitive=is_sens,
+        latest_log=latest_l,
+        skin_type=st
     )
+
+    priorities = [
+        {
+            "concern": item.get("name", "Skin Health"),
+            "urgency_score": round(item.get("ml_urgency_score", 50.0)),
+            "urgency_label": item.get("priority_label", "Moderate Priority"),
+            "telemetry_driver": item.get("telemetry_driver", "Calibrated via ML regression.")
+        }
+        for item in priorities_result.get("prioritized_list", [])
+    ]
 
     serialized_logs = [
         {

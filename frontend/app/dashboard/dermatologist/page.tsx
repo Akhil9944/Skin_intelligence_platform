@@ -165,6 +165,7 @@ export default function DermatologistPortalPage() {
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
   const [patientDetail, setPatientDetail] = useState<PatientDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
   const [doctorNotes, setDoctorNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -210,8 +211,16 @@ export default function DermatologistPortalPage() {
   const handleOpenPatientProfile = async (patientId: number) => {
     setSelectedPatientId(patientId);
     setDetailLoading(true);
+    setModalError(null);
+    setPatientDetail(null);
     setSaveSuccess(false);
     const token = localStorage.getItem("token");
+
+    if (!token) {
+      setModalError("You must be signed in with Certified Dermatologist credentials.");
+      setDetailLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch(`${getApiBase()}/dermatologist/patient/${patientId}`, {
@@ -221,9 +230,13 @@ export default function DermatologistPortalPage() {
         const data = await res.json();
         setPatientDetail(data);
         setDoctorNotes(data.profile?.clinical_notes || "");
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        setModalError(errJson.detail || `Failed to retrieve patient report (HTTP ${res.status}).`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error loading patient detail:", err);
+      setModalError(err.message || "Network error: Unable to load patient records.");
     } finally {
       setDetailLoading(false);
     }
@@ -657,6 +670,22 @@ export default function DermatologistPortalPage() {
                 <div className="py-20 text-center space-y-3">
                   <RefreshCw className="w-8 h-8 animate-spin mx-auto text-teal-600" />
                   <p className="text-xs font-bold text-slate-500">Retrieving full clinical telemetry & ML assessments...</p>
+                </div>
+              ) : modalError ? (
+                <div className="py-20 text-center space-y-4">
+                  <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 flex items-center justify-center mx-auto text-rose-500">
+                    <AlertTriangle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Unable to Open Patient Report</h3>
+                    <p className="text-xs text-rose-600 dark:text-rose-400 mt-1 max-w-sm mx-auto">{modalError}</p>
+                  </div>
+                  <button
+                    onClick={() => selectedPatientId && handleOpenPatientProfile(selectedPatientId)}
+                    className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-all shadow-md shadow-teal-600/30"
+                  >
+                    Try Again
+                  </button>
                 </div>
               ) : patientDetail ? (
                 <>

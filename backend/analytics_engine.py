@@ -441,7 +441,7 @@ def get_clinical_report_payload(skin_profile, logs: list, user=None) -> dict:
     from product_engine import get_product_recommendations
 
     # 1. Patient telemetry & identity
-    patient_name = getattr(user, "username", "Valued Member") if user else "Valued Member"
+    patient_name = getattr(user, "email", getattr(user, "username", "Valued Member")) if user else "Valued Member"
     user_id = getattr(user, "id", 1) if user else 1
     report_id = f"CLINIC-{user_id:04d}-{datetime.datetime.now().strftime('%m%d')}"
     report_date = datetime.datetime.now().strftime("%B %d, %Y")

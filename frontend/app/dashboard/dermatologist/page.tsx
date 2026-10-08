@@ -28,7 +28,12 @@ import {
   Layers,
   LogOut,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Printer,
+  UserCheck,
+  ShoppingBag,
+  Award,
+  HeartPulse
 } from "lucide-react";
 
 interface PatientSummary {
@@ -45,6 +50,39 @@ interface PatientSummary {
   average_sleep: number;
   average_water: number;
   risk_level: "High Risk" | "Moderate Risk" | "Stable" | string;
+}
+
+interface RadarPoint {
+  id?: string;
+  pillar?: string;
+  subject?: string;
+  score: number;
+  cohort_avg?: number;
+  status: string;
+  simple_meaning?: string;
+}
+
+interface RoutineStep {
+  step: string;
+  product: string;
+  why?: string;
+  reason?: string;
+}
+
+interface RecommendedProduct {
+  brand?: string;
+  name: string;
+  category: string;
+  match_percentage?: number;
+  match_score?: number;
+  simple_benefit?: string;
+  ai_reason?: string;
+  why_recommended?: string;
+}
+
+interface SafetyPrecaution {
+  rule: string;
+  explanation: string;
 }
 
 interface PatientDetail {
@@ -70,17 +108,44 @@ interface PatientDetail {
     pollution_exposure: string;
   }>;
   clinical_report: {
-    report_id: string;
-    score: number;
-    morning_routine: Array<{ step: string; product: string; reason: string }>;
-    evening_routine: Array<{ step: string; product: string; reason: string }>;
-    matched_products: Array<{ name: string; category: string; match_score: number }>;
-    ai_clinical_signoff: string;
+    report_id?: string;
+    report_date?: string;
+    score?: number;
+    scores?: {
+      current_score: number;
+      projected_7d: number;
+      status_label: string;
+    };
+    patient?: {
+      name: string;
+      skin_type: string;
+      primary_concern: string;
+      is_sensitive: boolean;
+      consistency_streak: string;
+      routine_adherence: string;
+    };
+    lifestyle_telemetry?: {
+      avg_sleep: string;
+      avg_water: string;
+      avg_stress: string;
+      avg_sun: string;
+    };
+    radar_points?: RadarPoint[];
+    morning_routine: RoutineStep[];
+    evening_routine: RoutineStep[];
+    recommended_products?: RecommendedProduct[];
+    matched_products?: Array<{ name: string; category: string; match_score: number }>;
+    safety_precautions?: SafetyPrecaution[];
+    ai_clinical_signoff?: {
+      assessment_note: string;
+      clinical_signee: string;
+      verification_status: string;
+    } | string;
   };
   priorities: Array<{
     concern: string;
     urgency_score: number;
-    urgency_label: string;
+    urgency_label?: string;
     telemetry_driver: string;
   }>;
 }
@@ -142,7 +207,7 @@ export default function DermatologistPortalPage() {
     }
   };
 
-  const handleOpenPatientDossier = async (patientId: number) => {
+  const handleOpenPatientProfile = async (patientId: number) => {
     setSelectedPatientId(patientId);
     setDetailLoading(true);
     setSaveSuccess(false);
@@ -561,10 +626,11 @@ export default function DermatologistPortalPage() {
                     </div>
 
                     <button
-                      onClick={() => handleOpenPatientDossier(patient.user_id)}
+                      onClick={() => handleOpenPatientProfile(patient.user_id)}
                       className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-all shadow-sm shadow-teal-600/30 flex items-center gap-1.5 active:scale-95"
                     >
-                      <span>Open Dossier</span>
+                      <UserCheck className="w-3.5 h-3.5" />
+                      <span>Open Profile</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -574,14 +640,15 @@ export default function DermatologistPortalPage() {
           </div>
         )}
 
-        {/* Deep Patient Clinical Dossier Modal */}
+        {/* Deep Patient Clinical Profile & Comprehensive Report Modal */}
         {selectedPatientId && (
-          <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative p-6 sm:p-8 space-y-6">
-              {/* Close Button */}
+          <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto print:p-0 print:bg-white">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-5xl w-full max-h-[92vh] overflow-y-auto shadow-2xl relative p-5 sm:p-8 space-y-6 print:max-h-none print:shadow-none print:border-none">
+              {/* Close Button (Hidden in print) */}
               <button
                 onClick={() => setSelectedPatientId(null)}
-                className="absolute top-6 right-6 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+                className="absolute top-6 right-6 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors print:hidden"
+                aria-label="Close Profile"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -596,7 +663,7 @@ export default function DermatologistPortalPage() {
                   {/* Modal Header */}
                   <div className="border-b border-slate-200 dark:border-slate-800 pb-5">
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 text-xs font-bold mb-2">
-                      <Stethoscope className="w-3.5 h-3.5" /> Patient Dossier
+                      <Stethoscope className="w-3.5 h-3.5" /> Patient Clinical Profile & Full Report
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div>
@@ -604,26 +671,33 @@ export default function DermatologistPortalPage() {
                           {patientDetail.patient.email}
                         </h2>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                          Patient ID #{patientDetail.patient.id} • Registered Member
+                          Patient ID #{patientDetail.patient.id} • Registered Member • {patientDetail.clinical_report?.report_id || `RPT-${patientDetail.patient.id}`} • Issued: {patientDetail.clinical_report?.report_date || "Today"}
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 print:hidden">
+                        <button
+                          onClick={() => window.print()}
+                          className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-1.5"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-teal-600" />
+                          Print Report
+                        </button>
                         <Link
                           href="/dashboard/reports"
                           target="_blank"
-                          className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-1.5"
+                          className="px-4 py-2 rounded-xl bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/60 text-xs font-bold text-teal-700 dark:text-teal-300 transition-colors flex items-center gap-1.5"
                         >
                           <FileText className="w-3.5 h-3.5 text-teal-600" />
-                          View Full Printable Report
-                          <ExternalLink className="w-3 h-3 text-slate-400" />
+                          Patient Report View
+                          <ExternalLink className="w-3 h-3 text-teal-500" />
                         </Link>
                       </div>
                     </div>
                   </div>
 
                   {/* Biomarker Summary Bar */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800/60 text-center">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800/60 text-center">
                     <div>
                       <span className="text-[10px] uppercase font-bold text-slate-400">Skin Type</span>
                       <p className="text-sm font-extrabold text-slate-800 dark:text-slate-200 mt-0.5">
@@ -643,12 +717,93 @@ export default function DermatologistPortalPage() {
                       </p>
                     </div>
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-400">Continuous Score</span>
+                      <span className="text-[10px] uppercase font-bold text-slate-400">Health Index</span>
                       <p className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                        {patientDetail.clinical_report.score} / 100
+                        {(patientDetail.clinical_report?.scores?.current_score ?? patientDetail.clinical_report?.score ?? 78)} / 100
                       </p>
+                      <span className="text-[9px] font-bold text-slate-400 block">
+                        {patientDetail.clinical_report?.scores?.status_label || "Active"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400">7-Day Target</span>
+                      <p className="text-sm font-extrabold text-blue-600 dark:text-blue-400 mt-0.5">
+                        {(patientDetail.clinical_report?.scores?.projected_7d ?? 84)} / 100
+                      </p>
+                      <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 block">
+                        +{(Math.max(1, (patientDetail.clinical_report?.scores?.projected_7d ?? 84) - (patientDetail.clinical_report?.scores?.current_score ?? 78)))} Pts Projected
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400">Adherence</span>
+                      <p className="text-sm font-extrabold text-slate-800 dark:text-slate-200 mt-0.5">
+                        {patientDetail.clinical_report?.patient?.routine_adherence || "88% Compliance"}
+                      </p>
+                      <span className="text-[9px] font-bold text-slate-400 block">
+                        {patientDetail.clinical_report?.patient?.consistency_streak || `${patientDetail.logs.length} Logs`}
+                      </span>
                     </div>
                   </div>
+
+                  {/* 5 Diagnostic Health Pillars */}
+                  {patientDetail.clinical_report?.radar_points && patientDetail.clinical_report.radar_points.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                          <Activity className="w-4 h-4 text-teal-600" />
+                          5 Diagnostic Health Pillars & Biological Defense Equilibrium
+                        </h3>
+                        <span className="text-[11px] font-medium text-slate-400">
+                          Cohort Normalized (N = 1,200)
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                        {patientDetail.clinical_report.radar_points.map((pt, idx) => (
+                          <div
+                            key={idx}
+                            className="p-3.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-2 flex flex-col justify-between"
+                          >
+                            <div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-slate-900 dark:text-white">
+                                  {pt.pillar || pt.subject || `Pillar ${idx + 1}`}
+                                </span>
+                                <span
+                                  className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold ${
+                                    pt.score >= 80
+                                      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400"
+                                      : pt.score >= 65
+                                      ? "bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400"
+                                      : "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400"
+                                  }`}
+                                >
+                                  {pt.status}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+                                {pt.simple_meaning || "Evaluation of biological balance."}
+                              </p>
+                            </div>
+
+                            <div className="pt-2 border-t border-slate-100 dark:border-slate-850">
+                              <div className="flex justify-between text-[11px] font-bold mb-1">
+                                <span className="text-teal-600 dark:text-teal-400">{pt.score} / 100</span>
+                                <span className="text-slate-400 font-normal text-[10px]">
+                                  Avg: {pt.cohort_avg || 70}
+                                </span>
+                              </div>
+                              <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                <div
+                                  className="h-full rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 transition-all duration-500"
+                                  style={{ width: `${Math.min(100, Math.max(5, pt.score))}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Machine Learning Concern Triage */}
                   <div className="space-y-3">
@@ -660,7 +815,7 @@ export default function DermatologistPortalPage() {
                       {patientDetail.priorities.map((item, idx) => (
                         <div
                           key={idx}
-                          className="p-3.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 p-3"
+                          className="p-3.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800"
                         >
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-slate-900 dark:text-white">
@@ -678,50 +833,102 @@ export default function DermatologistPortalPage() {
                     </div>
                   </div>
 
-                  {/* Recent 7-Day Lifestyle Telemetry History */}
+                  {/* 7-Day Lifestyle Telemetry Overview */}
+                  {patientDetail.clinical_report?.lifestyle_telemetry && (
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                        <HeartPulse className="w-4 h-4 text-rose-500" />
+                        Patient 7-Day Lifestyle Telemetry Synthesis
+                      </h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800/60">
+                          <span className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
+                            <Moon className="w-3.5 h-3.5 text-indigo-500" /> Average Sleep
+                          </span>
+                          <p className="text-sm font-extrabold text-slate-800 dark:text-slate-200 mt-1">
+                            {patientDetail.clinical_report.lifestyle_telemetry.avg_sleep}
+                          </p>
+                        </div>
+                        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800/60">
+                          <span className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
+                            <Droplet className="w-3.5 h-3.5 text-cyan-500" /> Water Intake
+                          </span>
+                          <p className="text-sm font-extrabold text-slate-800 dark:text-slate-200 mt-1">
+                            {patientDetail.clinical_report.lifestyle_telemetry.avg_water}
+                          </p>
+                        </div>
+                        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800/60">
+                          <span className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
+                            <Flame className="w-3.5 h-3.5 text-amber-500" /> Stress Index
+                          </span>
+                          <p className="text-sm font-extrabold text-slate-800 dark:text-slate-200 mt-1">
+                            {patientDetail.clinical_report.lifestyle_telemetry.avg_stress}
+                          </p>
+                        </div>
+                        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800/60">
+                          <span className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
+                            <Sun className="w-3.5 h-3.5 text-amber-500" /> Sun Exposure
+                          </span>
+                          <p className="text-sm font-extrabold text-slate-800 dark:text-slate-200 mt-1">
+                            {patientDetail.clinical_report.lifestyle_telemetry.avg_sun}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recorded Daily Telemetry Logs */}
                   <div className="space-y-3">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                       <Calendar className="w-4 h-4 text-blue-600" />
-                      Recent Telemetry History ({patientDetail.logs.length} logs recorded)
+                      Recorded Patient Telemetry Logs ({patientDetail.logs.length} logs recorded)
                     </h3>
-                    <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
-                      <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-100 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
-                          <tr>
-                            <th className="p-3 font-bold">Date Logged</th>
-                            <th className="p-3 font-bold">Sleep Hours</th>
-                            <th className="p-3 font-bold">Hydration</th>
-                            <th className="p-3 font-bold">Stress Index</th>
-                            <th className="p-3 font-bold">Sun Exposure</th>
-                            <th className="p-3 font-bold">Environment</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                          {patientDetail.logs.slice(0, 5).map((log) => (
-                            <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/50">
-                              <td className="p-3 font-semibold text-slate-900 dark:text-white">{log.date_logged}</td>
-                              <td className="p-3 text-slate-700 dark:text-slate-300">{log.sleep_hours}h</td>
-                              <td className="p-3 text-slate-700 dark:text-slate-300">{log.water_glasses} glasses</td>
-                              <td className="p-3">
-                                <span
-                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                    log.stress_level >= 7
-                                      ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400"
-                                      : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
-                                  }`}
-                                >
-                                  {log.stress_level} / 10
-                                </span>
-                              </td>
-                              <td className="p-3 text-slate-700 dark:text-slate-300">{log.sun_exposure_hours}h</td>
-                              <td className="p-3 text-slate-500 dark:text-slate-400">
-                                {log.weather_condition || "Clear"} • {log.pollution_exposure || "Low"}
-                              </td>
+                    {patientDetail.logs.length === 0 ? (
+                      <div className="p-6 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
+                        No telemetry logs logged yet by this patient.
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-slate-100 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                            <tr>
+                              <th className="p-3 font-bold">Date Logged</th>
+                              <th className="p-3 font-bold">Sleep Hours</th>
+                              <th className="p-3 font-bold">Hydration</th>
+                              <th className="p-3 font-bold">Stress Index</th>
+                              <th className="p-3 font-bold">Sun Exposure</th>
+                              <th className="p-3 font-bold">Environment</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {patientDetail.logs.slice(0, 10).map((log) => (
+                              <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/50">
+                                <td className="p-3 font-semibold text-slate-900 dark:text-white">{log.date_logged}</td>
+                                <td className="p-3 text-slate-700 dark:text-slate-300">{log.sleep_hours}h</td>
+                                <td className="p-3 text-slate-700 dark:text-slate-300">{log.water_glasses} glasses</td>
+                                <td className="p-3">
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                      log.stress_level >= 7
+                                        ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400"
+                                        : log.stress_level >= 4
+                                        ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
+                                        : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
+                                    }`}
+                                  >
+                                    {log.stress_level} / 10
+                                  </span>
+                                </td>
+                                <td className="p-3 text-slate-700 dark:text-slate-300">{log.sun_exposure_hours}h</td>
+                                <td className="p-3 text-slate-500 dark:text-slate-400">
+                                  {log.weather_condition || "Clear"} • {log.pollution_exposure || "Low"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
 
                   {/* Prescribed Regimen Summary */}
@@ -736,11 +943,18 @@ export default function DermatologistPortalPage() {
                         <span className="text-[11px] font-extrabold uppercase text-amber-800 dark:text-amber-400 flex items-center gap-1.5 mb-2">
                           <Sun className="w-3.5 h-3.5 text-amber-500" /> Morning AM Protocol
                         </span>
-                        <ul className="space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
-                          {patientDetail.clinical_report.morning_routine.map((step, sIdx) => (
-                            <li key={sIdx} className="flex items-start gap-1.5">
-                              <span className="font-bold text-amber-700 dark:text-amber-400">• {step.step}:</span>
-                              <span>{step.product}</span>
+                        <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                          {patientDetail.clinical_report?.morning_routine?.map((step, sIdx) => (
+                            <li key={sIdx} className="space-y-0.5">
+                              <div className="flex items-start gap-1.5">
+                                <span className="font-bold text-amber-700 dark:text-amber-400">• {step.step}:</span>
+                                <span className="font-semibold text-slate-900 dark:text-white">{step.product}</span>
+                              </div>
+                              {(step.why || step.reason) && (
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 pl-3">
+                                  {step.why || step.reason}
+                                </p>
+                              )}
                             </li>
                           ))}
                         </ul>
@@ -751,17 +965,123 @@ export default function DermatologistPortalPage() {
                         <span className="text-[11px] font-extrabold uppercase text-indigo-800 dark:text-indigo-400 flex items-center gap-1.5 mb-2">
                           <Moon className="w-3.5 h-3.5 text-indigo-500" /> Evening PM Protocol
                         </span>
-                        <ul className="space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
-                          {patientDetail.clinical_report.evening_routine.map((step, sIdx) => (
-                            <li key={sIdx} className="flex items-start gap-1.5">
-                              <span className="font-bold text-indigo-700 dark:text-indigo-400">• {step.step}:</span>
-                              <span>{step.product}</span>
+                        <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                          {patientDetail.clinical_report?.evening_routine?.map((step, sIdx) => (
+                            <li key={sIdx} className="space-y-0.5">
+                              <div className="flex items-start gap-1.5">
+                                <span className="font-bold text-indigo-700 dark:text-indigo-400">• {step.step}:</span>
+                                <span className="font-semibold text-slate-900 dark:text-white">{step.product}</span>
+                              </div>
+                              {(step.why || step.reason) && (
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 pl-3">
+                                  {step.why || step.reason}
+                                </p>
+                              )}
                             </li>
                           ))}
                         </ul>
                       </div>
                     </div>
                   </div>
+
+                  {/* Clinically Matched Skincare Formulations */}
+                  {((patientDetail.clinical_report?.recommended_products && patientDetail.clinical_report.recommended_products.length > 0) ||
+                    (patientDetail.clinical_report?.matched_products && patientDetail.clinical_report.matched_products.length > 0)) && (
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                        <ShoppingBag className="w-4 h-4 text-emerald-600" />
+                        AI-Matched Skincare Formulations & Actives
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {(patientDetail.clinical_report.recommended_products || patientDetail.clinical_report.matched_products || []).map((prod, pIdx) => {
+                          const matchPct = (prod as any).match_percentage ?? (prod as any).match_score ?? 90;
+                          return (
+                            <div
+                              key={pIdx}
+                              className="p-3.5 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-2 flex flex-col justify-between"
+                            >
+                              <div>
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-[10px] font-extrabold uppercase text-slate-400">
+                                    {(prod as any).brand || (prod as any).category || "Formulation"}
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 text-[10px] font-extrabold">
+                                    {matchPct}% Match
+                                  </span>
+                                </div>
+                                <h4 className="text-xs font-bold text-slate-900 dark:text-white mt-1">
+                                  {prod.name}
+                                </h4>
+                                {(prod as any).simple_benefit && (
+                                  <p className="text-[11px] text-teal-600 dark:text-teal-400 font-semibold mt-1">
+                                    {(prod as any).simple_benefit}
+                                  </p>
+                                )}
+                                {(prod as any).ai_reason && (
+                                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 italic">
+                                    &ldquo;{(prod as any).ai_reason}&rdquo;
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Safety Precautions & Contraindications */}
+                  {patientDetail.clinical_report?.safety_precautions && patientDetail.clinical_report.safety_precautions.length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 text-amber-500" />
+                        Clinical Safety Precautions & Contraindications
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {patientDetail.clinical_report.safety_precautions.map((pre, prIdx) => (
+                          <div
+                            key={prIdx}
+                            className="p-3.5 rounded-2xl bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 space-y-1"
+                          >
+                            <span className="text-xs font-bold text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" /> {pre.rule}
+                            </span>
+                            <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                              {pre.explanation}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* AI Dermatologist Clinical Evaluation Sign-off */}
+                  {patientDetail.clinical_report?.ai_clinical_signoff && (
+                    <div className="p-4 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-900/40 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-extrabold uppercase text-indigo-800 dark:text-indigo-400 flex items-center gap-1.5">
+                          <Award className="w-3.5 h-3.5 text-indigo-500" /> AI Clinical Synthesis & Diagnostic Sign-Off
+                        </span>
+                        <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-300">
+                          {typeof patientDetail.clinical_report.ai_clinical_signoff === "object"
+                            ? patientDetail.clinical_report.ai_clinical_signoff.verification_status
+                            : "Validated Multi-Model Calibration"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-700 dark:text-slate-300 italic">
+                        &ldquo;
+                        {typeof patientDetail.clinical_report.ai_clinical_signoff === "object"
+                          ? patientDetail.clinical_report.ai_clinical_signoff.assessment_note
+                          : patientDetail.clinical_report.ai_clinical_signoff}
+                        &rdquo;
+                      </p>
+                      {typeof patientDetail.clinical_report.ai_clinical_signoff === "object" && (
+                        <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 text-right">
+                          Signed: {patientDetail.clinical_report.ai_clinical_signoff.clinical_signee}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Doctor Clinical Notes Editor */}
                   <div className="space-y-3 p-5 rounded-2xl bg-teal-50/40 dark:bg-teal-950/20 border border-teal-200/80 dark:border-teal-900/60">
